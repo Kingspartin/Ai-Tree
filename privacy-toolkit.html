@@ -193,8 +193,8 @@
         <b>⚠️ Read this first.</b> A web page cannot delete arbitrary files. This shredder overwrites the
         actual bytes of files <b>you explicitly pick</b>, then blanks them — using the browser's File System
         Access API. It works on <b>Chrome / Edge (desktop &amp; Android)</b>. On iPhone/iPad and Firefox the
-        API is unavailable, so a limited fallback is offered. <b>On USB sticks &amp; SSDs, wear-levelling can
-        leave old copies behind — see the “How &amp; USB” tab for the honest limits.</b>
+        API is unavailable, so a limited fallback is offered. <b>Heads-up: on USB sticks &amp; SSDs, wiping
+        isn't 100% guaranteed — the drive can secretly keep an extra copy. Encrypt the drive for real safety.</b>
       </div>
       <div id="fsaOk" class="hidden">
         <div class="field">
@@ -229,12 +229,12 @@
   <section id="tab-about" class="hidden">
     <div class="card">
       <h3 style="margin-top:0">📦 Put it on a USB (mobile + PC)</h3>
-      <p class="muted">This whole toolkit is a single file — <code>index.html</code>. There is no install and
-        no server.</p>
+      <p class="muted">Two files — <code>privacy-toolkit.html</code> (this page) and <code>trash-bin.html</code>.
+        Keep them in the same folder. No install, no server.</p>
       <ol class="muted" style="padding-left:18px">
-        <li>Copy <code>index.html</code> to the root of your USB stick.</li>
-        <li><b>PC/Mac/Linux:</b> plug in, double-click <code>index.html</code> → opens in your browser.</li>
-        <li><b>Android:</b> plug USB via OTG, open the Files app, tap <code>index.html</code>, “Open with” a browser.</li>
+        <li>Copy both files to the root of your USB stick.</li>
+        <li><b>PC/Mac/Linux:</b> plug in, double-click <code>privacy-toolkit.html</code> → opens in your browser.</li>
+        <li><b>Android:</b> plug USB via OTG, open the Files app, tap <code>privacy-toolkit.html</code>, “Open with” a browser.</li>
         <li><b>iPhone/iPad:</b> use a Lightning/USB-C reader, open Files, tap the file (Safari). Note: the
           shredder's in-place overwrite is desktop/Android-Chrome only on iOS.</li>
       </ol>
@@ -269,15 +269,12 @@
         place and blanks it to 0 bytes. Same overwrite technique and same flash-media caveat as the shredder.
         Works on Chrome / Edge (desktop &amp; Android).
       </div></details>
-      <details><summary>Secure Shredder — and why flash media is tricky</summary><div class="bd">
-        Uses the File System Access API to open a real file handle and overwrite its bytes in place with
-        multiple passes, then truncates it to zero so you can delete an empty shell.
-        <b>Important limitation:</b> USB flash drives and SSDs use wear-levelling, so the controller may
-        write your “overwrite” to <i>different</i> physical cells and leave the original data intact in
-        cells you can't address from software. Overwriting still helps, but the only reliable protection on
-        flash is <b>full-disk / hardware encryption</b> (e.g. BitLocker To Go, VeraCrypt, LUKS) so any
-        leftover fragments are ciphertext. On classic spinning hard drives, multi-pass overwrite is
-        genuinely effective.
+      <details><summary>Secure Shredder — the honest catch on USB &amp; SSD</summary><div class="bd">
+        It opens a real file, overwrites its bytes several times, then blanks it to 0 bytes so you can delete
+        an empty shell. <b>The catch:</b> USB sticks and SSDs sometimes save your “overwrite” to a
+        <i>different</i> spot and quietly keep the original — so wiping isn't 100% guaranteed on those drives.
+        The reliable fix is to <b>encrypt the whole drive</b> (BitLocker To Go, VeraCrypt, or LUKS); then any
+        leftover scraps are just unreadable gibberish. On old spinning hard drives, overwriting works fine.
       </div></details>
       <div class="notice warn" style="margin-top:12px">No warranty. For high-stakes data, combine this with
         full-disk encryption and, for maximum assurance, physical destruction of the media.</div>

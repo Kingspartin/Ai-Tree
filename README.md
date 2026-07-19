@@ -21,11 +21,11 @@ Everything happens in your browser's memory. Nothing is uploaded — turn on Air
 
 ## 📦 Put it on a USB
 
-Copy **[`index.html`](index.html)** and **[`trash-bin.html`](trash-bin.html)** to the root of a USB drive
-(keep them in the same folder so the in-app link works). Open `index.html` to start.
+Copy **[`privacy-toolkit.html`](privacy-toolkit.html)** and **[`trash-bin.html`](trash-bin.html)** to the root of a USB drive
+(keep them in the same folder so the in-app link works). Open `privacy-toolkit.html` to start.
 
-- **Windows / macOS / Linux** — plug in, double-click `index.html`.
-- **Android** — plug the USB in via OTG, open the Files app, tap `index.html` → *Open with* a browser.
+- **Windows / macOS / Linux** — plug in, double-click `privacy-toolkit.html`.
+- **Android** — plug the USB in via OTG, open the Files app, tap `privacy-toolkit.html` → *Open with* a browser.
 - **iPhone / iPad** — use a Lightning/USB-C reader, open Files, tap the file (opens in Safari).
 
 ---
@@ -43,11 +43,10 @@ Copy **[`index.html`](index.html)** and **[`trash-bin.html`](trash-bin.html)** t
 - **The shredder** uses the browser **File System Access API** to overwrite files in place. That API exists on
   **Chrome / Edge (desktop & Android)**. On **iOS Safari and Firefox** it's unavailable — the page detects this
   and shows OS-level alternatives (`shred -u` on Linux, etc.) instead of pretending to work.
-- **Flash media (USB sticks & SSDs) use wear-levelling**, so an in-place overwrite may be redirected to
-  different physical cells, leaving old data behind in cells software can't reach. Overwriting helps, but the
-  only reliable protection on flash is **full-disk / hardware encryption** (BitLocker To Go, VeraCrypt, LUKS)
-  so any leftover fragments are unreadable ciphertext. On classic spinning hard drives, multi-pass overwrite
-  is genuinely effective.
+- **Wiping on USB sticks & SSDs isn't 100% guaranteed.** These drives sometimes save your "overwrite" to a
+  different spot and quietly keep the original, so scraps can survive. Overwriting still helps, but the real
+  fix is to **encrypt the whole drive** (BitLocker To Go, VeraCrypt, or LUKS) — then any leftovers are just
+  unreadable gibberish. On old spinning hard drives, overwriting works fine.
 
 No warranty. For high-stakes data, combine this with full-disk encryption — and, for maximum assurance,
 physical destruction of the media.
