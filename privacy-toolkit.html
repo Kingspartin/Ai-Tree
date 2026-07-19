@@ -356,22 +356,26 @@ function parseTIFF(dv, tiffStart){
     return null;
   }
   function readIFD(ifdOff, tagMap){
-    const res={}; if(ifdOff+2>dv.byteLength) return res;
-    const n=g16(ifdOff);
+    const res={}; if(ifdOff<0 || ifdOff+2>dv.byteLength) return res;
+    let n=g16(ifdOff);
+    if(n>1024) n=1024; // guard against misaligned/corrupt data
     for(let i=0;i<n;i++){
       const e=ifdOff+2+i*12; if(e+12>dv.byteLength)break;
       const tag=g16(e), type=g16(e+2), count=g32(e+4), valOff=e+8;
+      if(type<1||type>12||count>dv.byteLength) continue; // skip invalid entries
       const name=tagMap[tag]||('0x'+tag.toString(16));
       let v; try{ v=readVal(type,count,valOff); }catch(_){ v=null; }
       res[tag]={name,value:v};
     }
     return res;
   }
-  const ifd0=readIFD(firstIFD,EXIF_TAGS);
+  // firstIFD is an offset relative to tiffStart — must add tiffStart.
+  const ifd0=readIFD(tiffStart+firstIFD,EXIF_TAGS);
   for(const t in ifd0){ const {name,value}=ifd0[t]; if(name&&name[0]!=='_') out[name]=value; }
-  if(ifd0[0x8769]) { const sub=readIFD(tiffStart+ifd0[0x8769].value,EXIF_TAGS);
+  const subPtr=ifd0[0x8769]&&ifd0[0x8769].value, gpsPtr=ifd0[0x8825]&&ifd0[0x8825].value;
+  if(typeof subPtr==='number') { const sub=readIFD(tiffStart+subPtr,EXIF_TAGS);
     for(const t in sub){const {name,value}=sub[t]; if(name&&name[0]!=='_') out[name]=value;} }
-  if(ifd0[0x8825]){ const gps=readIFD(tiffStart+ifd0[0x8825].value,GPS_TAGS);
+  if(typeof gpsPtr==='number'){ const gps=readIFD(tiffStart+gpsPtr,GPS_TAGS);
     const raw={}; for(const t in gps){raw[gps[t].name]=gps[t].value;}
     if(Array.isArray(raw['Latitude'])&&Array.isArray(raw['Longitude'])){
       const dms=a=>a[0]+a[1]/60+a[2]/3600;
