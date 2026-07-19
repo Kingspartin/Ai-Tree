@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Offline Privacy Toolkit — Metadata Viewer · Eraser · Shredder</title>
+<style>
+  :root{
+    --bg:#0b0f16; --panel:#131a26; --panel-2:#0f1520; --line:#233042;
+    --txt:#e7edf6; --muted:#9fb0c6; --accent:#4da3ff; --accent-2:#38d39f;
+    --danger:#ff6b6b; --warn:#ffcf5c; --chip:#1b2636; --radius:14px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#eef2f8; --panel:#ffffff; --panel-2:#f5f8fd; --line:#d7e0ee;
+      --txt:#132030; --muted:#5a6a80; --chip:#eef3fb; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt); font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-text-size-adjust:100%; padding-bottom:env(safe-area-inset-bottom);
+  }
+  header{
+    padding:18px 16px calc(14px + env(safe-area-inset-top)); padding-top:calc(16px + env(safe-area-inset-top));
+    border-bottom:1px solid var(--line); background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    position:sticky; top:0; z-index:5;
+  }
+  .brand{display:flex; align-items:center; gap:12px; max-width:900px; margin:0 auto}
+  .logo{width:38px;height:38px;flex:0 0 auto;border-radius:10px;
+    background:radial-gradient(120% 120% at 30% 20%,var(--accent),#1b5fb0);
+    display:grid;place-items:center;font-size:20px;box-shadow:0 6px 18px rgba(77,163,255,.35)}
+  h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .offline-pill{margin-left:auto;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;
+    background:rgba(56,211,159,.14);color:var(--accent-2);border:1px solid rgba(56,211,159,.35);white-space:nowrap}
+  nav{max-width:900px;margin:14px auto 0;display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  nav button{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--chip);color:var(--muted);
+    padding:9px 14px;border-radius:999px;font-size:13.5px;font-weight:600;cursor:pointer;transition:.15s}
+  nav button.active{background:var(--accent);color:#04121f;border-color:var(--accent)}
+  main{max-width:900px;margin:0 auto;padding:18px 16px 40px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+  .drop{
+    border:1.5px dashed var(--line);border-radius:var(--radius);padding:26px 16px;text-align:center;
+    background:var(--panel-2);cursor:pointer;transition:.15s}
+  .drop.hover{border-color:var(--accent);background:rgba(77,163,255,.08)}
+  .drop .ico{font-size:30px}
+  .drop b{display:block;margin-top:6px}
+  .drop small{color:var(--muted)}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  button.btn,.btn{
+    border:1px solid var(--line);background:var(--chip);color:var(--txt);
+    padding:10px 14px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#04121f;border-color:var(--accent)}
+  .btn.good{background:var(--accent-2);color:#04140d;border-color:var(--accent-2)}
+  .btn.danger{background:var(--danger);color:#1a0606;border-color:var(--danger)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .muted{color:var(--muted)}
+  .hidden{display:none!important}
+  .notice{border-radius:10px;padding:11px 13px;font-size:13px;border:1px solid var(--line);background:var(--panel-2)}
+  .notice.warn{border-color:rgba(255,207,92,.4);background:rgba(255,207,92,.09);color:var(--txt)}
+  .notice.danger{border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.09)}
+  .notice.ok{border-color:rgba(56,211,159,.4);background:rgba(56,211,159,.1)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-word}
+  th{color:var(--muted);font-weight:600;width:42%}
+  .grp{margin-top:14px}
+  .grp h3{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:0 0 6px}
+  .thumb{max-width:100%;max-height:230px;border-radius:10px;border:1px solid var(--line);display:block;margin:10px auto}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{background:var(--chip);border:1px solid var(--line);padding:4px 9px;border-radius:999px;font-size:12px}
+  .chip.hit{border-color:var(--danger);color:var(--danger)}
+  .field{display:flex;flex-direction:column;gap:5px;margin:8px 0}
+  .field label{font-size:12.5px;color:var(--muted);font-weight:600}
+  select,input[type=range]{width:100%}
+  select{background:var(--chip);color:var(--txt);border:1px solid var(--line);padding:9px;border-radius:10px;font-size:14px}
+  .bar{height:9px;border-radius:999px;background:var(--panel-2);overflow:hidden;border:1px solid var(--line)}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .2s}
+  .filelist{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+  .fitem{display:flex;gap:10px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .fitem .nm{font-weight:600;font-size:13.5px;word-break:break-all}
+  .fitem .st{font-size:12px;margin-left:auto;white-space:nowrap}
+  .st.done{color:var(--accent-2)} .st.err{color:var(--danger)} .st.work{color:var(--warn)}
+  code{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12.5px}
+  footer{max-width:900px;margin:0 auto;padding:10px 16px 34px;color:var(--muted);font-size:12px;text-align:center}
+  a{color:var(--accent)}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.split{grid-template-columns:1fr}}
+  details{border:1px solid var(--line);border-radius:10px;padding:0 12px;background:var(--panel-2);margin-top:10px}
+  details>summary{cursor:pointer;padding:11px 0;font-weight:600;font-size:13.5px;list-style:none}
+  details>summary::-webkit-details-marker{display:none}
+  details>summary::before{content:"▸ ";color:var(--accent)}
+  details[open]>summary::before{content:"▾ "}
+  details .bd{padding-bottom:12px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">🛡️</div>
+    <div>
+      <h1>Offline Privacy Toolkit</h1>
+      <div class="sub">Metadata viewer · Metadata eraser · Secure shredder</div>
+    </div>
+    <span class="offline-pill" id="offlinePill">● OFFLINE-SAFE</span>
+  </div>
+  <nav>
+    <button data-tab="view" class="active">🔍 Metadata Viewer</button>
+    <button data-tab="erase">🧽 Metadata Eraser</button>
+    <button data-tab="shred">🔥 Secure Shredder</button>
+    <button data-tab="about">ℹ️ How &amp; USB</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============================ VIEWER ============================ -->
+  <section id="tab-view">
+    <div class="card">
+      <div class="drop" id="viewDrop">
+        <div class="ico">🖼️</div>
+        <b>Tap or drop an image to inspect its hidden metadata</b>
+        <small>JPEG · PNG · WebP · HEIC* · TIFF · GIF — nothing leaves this device</small>
+      </div>
+      <input type="file" id="viewInput" accept="image/*" class="hidden">
+    </div>
+    <div id="viewResult"></div>
+  </section>
+
+  <!-- ============================ ERASER ============================ -->
+  <section id="tab-erase" class="hidden">
+    <div class="card">
+      <div class="drop" id="eraseDrop">
+        <div class="ico">🧽</div>
+        <b>Tap or drop image(s) to strip metadata</b>
+        <small>Removes EXIF, GPS location, XMP, IPTC, camera &amp; comment data</small>
+      </div>
+      <input type="file" id="eraseInput" accept="image/*" multiple class="hidden">
+      <div class="field" style="margin-top:14px">
+        <label for="eraseMode">Cleaning method</label>
+        <select id="eraseMode">
+          <option value="lossless">Lossless — remove metadata, keep original pixels (JPEG/PNG best)</option>
+          <option value="reencode">Re-encode — redraw pixels, guarantees a totally clean file (any format)</option>
+        </select>
+      </div>
+      <div class="field" id="qualityWrap">
+        <label for="quality">Re-encode quality (JPEG) — <span id="qLabel">92%</span></label>
+        <input type="range" id="quality" min="50" max="100" value="92">
+      </div>
+    </div>
+    <div id="eraseResult"></div>
+  </section>
+
+  <!-- ============================ SHREDDER ============================ -->
+  <section id="tab-shred" class="hidden">
+    <div class="card">
+      <div class="notice warn" style="margin-bottom:14px">
+        <b>⚠️ Read this first.</b> A web page cannot delete arbitrary files. This shredder overwrites the
+        actual bytes of files <b>you explicitly pick</b>, then blanks them — using the browser's File System
+        Access API. It works on <b>Chrome / Edge (desktop &amp; Android)</b>. On iPhone/iPad and Firefox the
+        API is unavailable, so a limited fallback is offered. <b>On USB sticks &amp; SSDs, wear-levelling can
+        leave old copies behind — see the “How &amp; USB” tab for the honest limits.</b>
+      </div>
+      <div id="fsaOk" class="hidden">
+        <div class="field">
+          <label for="passes">Overwrite passes</label>
+          <select id="passes">
+            <option value="1">1 pass — quick (zeros)</option>
+            <option value="3" selected>3 passes — DoD-style (0x00, 0xFF, random)</option>
+            <option value="7">7 passes — paranoid</option>
+          </select>
+        </div>
+        <div class="row">
+          <button class="btn danger" id="shredPick">🔥 Pick file(s) to shred</button>
+          <span class="muted" id="shredHint">You'll confirm before anything is overwritten.</span>
+        </div>
+        <div class="filelist" id="shredList"></div>
+      </div>
+      <div id="fsaNo" class="hidden">
+        <div class="notice danger">
+          <b>This browser can't overwrite files on disk.</b> True in-place shredding isn't available here
+          (common on iOS Safari &amp; Firefox). Options:
+          <ul style="margin:8px 0 0;padding-left:18px">
+            <li>Use <b>Chrome or Edge</b> from the USB for real in-place overwrite, or</li>
+            <li>Use your OS tools: <code>shred -u file</code> (Linux), Files app “Delete” + empty Recently
+              Deleted (iOS), or a trusted native wiper. Then encrypt the drive so leftovers are unreadable.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ ABOUT ============================ -->
+  <section id="tab-about" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">📦 Put it on a USB (mobile + PC)</h3>
+      <p class="muted">This whole toolkit is a single file — <code>index.html</code>. There is no install and
+        no server.</p>
+      <ol class="muted" style="padding-left:18px">
+        <li>Copy <code>index.html</code> to the root of your USB stick.</li>
+        <li><b>PC/Mac/Linux:</b> plug in, double-click <code>index.html</code> → opens in your browser.</li>
+        <li><b>Android:</b> plug USB via OTG, open the Files app, tap <code>index.html</code>, “Open with” a browser.</li>
+        <li><b>iPhone/iPad:</b> use a Lightning/USB-C reader, open Files, tap the file (Safari). Note: the
+          shredder's in-place overwrite is desktop/Android-Chrome only on iOS.</li>
+      </ol>
+      <div class="notice ok">✅ Fully offline. Turn on Airplane Mode and everything still works —
+        all processing happens in your browser's memory. No analytics, no fonts, no CDN, no network calls.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">🔬 How each tool works &amp; its honest limits</h3>
+      <details><summary>Metadata Viewer</summary><div class="bd">
+        Parses the file's bytes directly in JavaScript: JPEG APP1/EXIF (TIFF IFD0, Exif SubIFD, GPS IFD),
+        XMP, IPTC/Photoshop (APP13), plus PNG text chunks. It highlights privacy-sensitive fields like
+        <b>GPS location</b>, device serial numbers, and timestamps. HEIC metadata support depends on your
+        browser being able to decode HEIC.
+      </div></details>
+      <details><summary>Metadata Eraser</summary><div class="bd">
+        <b>Lossless</b> mode rebuilds a JPEG/PNG keeping the exact original image data but dropping the
+        metadata segments (EXIF/XMP/IPTC/comments) — no quality loss. <b>Re-encode</b> mode paints the
+        pixels onto a canvas and exports a fresh image; this guarantees zero leftover metadata for any
+        format the browser can open, at the cost of re-compressing. Always re-open the cleaned file in the
+        Viewer to confirm it's empty.
+      </div></details>
+      <details><summary>Secure Shredder — and why flash media is tricky</summary><div class="bd">
+        Uses the File System Access API to open a real file handle and overwrite its bytes in place with
+        multiple passes, then truncates it to zero so you can delete an empty shell.
+        <b>Important limitation:</b> USB flash drives and SSDs use wear-levelling, so the controller may
+        write your “overwrite” to <i>different</i> physical cells and leave the original data intact in
+        cells you can't address from software. Overwriting still helps, but the only reliable protection on
+        flash is <b>full-disk / hardware encryption</b> (e.g. BitLocker To Go, VeraCrypt, LUKS) so any
+        leftover fragments are ciphertext. On classic spinning hard drives, multi-pass overwrite is
+        genuinely effective.
+      </div></details>
+      <div class="notice warn" style="margin-top:12px">No warranty. For high-stakes data, combine this with
+        full-disk encryption and, for maximum assurance, physical destruction of the media.</div>
+    </div>
+  </section>
+</main>
+
+<footer>Offline Privacy Toolkit — 100% client-side · works with no internet · one file, any device</footer>
+
+<script>
+"use strict";
+/* ============================================================
+   Small helpers
+============================================================ */
+const $ = s => document.querySelector(s);
+const el = (t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+const fmtBytes = n => { if(n<1024)return n+' B'; const u=['KB','MB','GB']; let i=-1; do{n/=1024;i++;}while(n>=1024&&i<2); return n.toFixed(n<10?2:1)+' '+u[i]; };
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dl = (blob,name)=>{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);};
+
+/* Tabs */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('main > section').forEach(s=>s.classList.add('hidden'));
+  $('#tab-'+b.dataset.tab).classList.remove('hidden');
+  window.scrollTo(0,0);
+});
+
+/* Drag/drop + click wiring for a drop zone */
+function wireDrop(zoneSel, inputSel, onFiles){
+  const z=$(zoneSel), inp=$(inputSel);
+  z.onclick=()=>inp.click();
+  inp.onchange=()=>{ if(inp.files.length) onFiles([...inp.files]); inp.value=''; };
+  ['dragenter','dragover'].forEach(ev=>z.addEventListener(ev,e=>{e.preventDefault();z.classList.add('hover');}));
+  ['dragleave','drop'].forEach(ev=>z.addEventListener(ev,e=>{e.preventDefault();z.classList.remove('hover');}));
+  z.addEventListener('drop',e=>{const f=[...(e.dataTransfer?.files||[])];if(f.length)onFiles(f);});
+}
+
+/* ============================================================
+   EXIF / metadata parser (pure JS, no libraries)
+============================================================ */
+const EXIF_TAGS={0x0100:'Image Width',0x0101:'Image Height',0x010e:'Description',0x010f:'Camera Make',
+0x0110:'Camera Model',0x0112:'Orientation',0x011a:'X Resolution',0x011b:'Y Resolution',0x0128:'Resolution Unit',
+0x0131:'Software',0x0132:'Date/Time',0x013b:'Artist',0x8298:'Copyright',0x829a:'Exposure Time',0x829d:'F-Number',
+0x8822:'Exposure Program',0x8827:'ISO',0x9003:'Date Taken (original)',0x9004:'Date Digitized',
+0x9201:'Shutter Speed',0x9202:'Aperture',0x9204:'Exposure Bias',0x9207:'Metering Mode',0x9209:'Flash',
+0x920a:'Focal Length',0x927c:'Maker Note',0x9286:'User Comment',0xa002:'Pixel X',0xa003:'Pixel Y',
+0xa405:'Focal Length (35mm)',0xa432:'Lens Info',0xa433:'Lens Make',0xa434:'Lens Model',0xa435:'Lens Serial',
+0xc62f:'Camera Serial',0xa430:'Camera Owner',0x8769:'_exifIFD',0x8825:'_gpsIFD'};
+const GPS_TAGS={0:'GPS Version',1:'Lat Ref',2:'Latitude',3:'Lon Ref',4:'Longitude',5:'Alt Ref',6:'Altitude',
+7:'GPS Time',8:'Satellites',18:'Map Datum',29:'GPS Date'};
+const SENSITIVE=new Set(['Latitude','Longitude','Altitude','GPS Time','GPS Date','Camera Serial','Lens Serial',
+'Camera Owner','Artist','Maker Note','User Comment','Date Taken (original)','Date/Time','Software','GPS Coordinates']);
+
+function parseTIFF(dv, tiffStart){
+  const le = dv.getUint16(tiffStart)===0x4949;
+  const g16=o=>dv.getUint16(o,le), g32=o=>dv.getUint32(o,le);
+  const firstIFD = g32(tiffStart+4);
+  const out={}; const sizes={1:1,2:1,3:2,4:4,5:8,7:1,9:4,10:8};
+  function readVal(type,count,valOff){
+    const s=sizes[type]||1, total=s*count;
+    let off=valOff; if(total>4) off=tiffStart+g32(valOff);
+    if(type===2){ let str=''; for(let i=0;i<count;i++){const c=dv.getUint8(off+i); if(c===0)break; str+=String.fromCharCode(c);} return str.trim(); }
+    if(type===5||type===10){ const arr=[]; for(let i=0;i<count;i++){const n=type===10?dv.getInt32(off+i*8,le):g32(off+i*8);const d=type===10?dv.getInt32(off+i*8+4,le):g32(off+i*8+4);arr.push(d?n/d:0);} return count===1?arr[0]:arr; }
+    if(type===3){ const arr=[]; for(let i=0;i<count;i++)arr.push(g16(off+i*2)); return count===1?arr[0]:arr; }
+    if(type===4||type===9){ const arr=[]; for(let i=0;i<count;i++)arr.push(type===9?dv.getInt32(off+i*4,le):g32(off+i*4)); return count===1?arr[0]:arr; }
+    if(type===1||type===7){ const arr=[]; for(let i=0;i<Math.min(count,64);i++)arr.push(dv.getUint8(off+i)); return arr; }
+    return null;
+  }
+  function readIFD(ifdOff, tagMap){
+    const res={}; if(ifdOff+2>dv.byteLength) return res;
+    const n=g16(ifdOff);
+    for(let i=0;i<n;i++){
+      const e=ifdOff+2+i*12; if(e+12>dv.byteLength)break;
+      const tag=g16(e), type=g16(e+2), count=g32(e+4), valOff=e+8;
+      const name=tagMap[tag]||('0x'+tag.toString(16));
+      let v; try{ v=readVal(type,count,valOff); }catch(_){ v=null; }
+      res[tag]={name,value:v};
+    }
+    return res;
+  }
+  const ifd0=readIFD(firstIFD,EXIF_TAGS);
+  for(const t in ifd0){ const {name,value}=ifd0[t]; if(name&&name[0]!=='_') out[name]=value; }
+  if(ifd0[0x8769]) { const sub=readIFD(tiffStart+ifd0[0x8769].value,EXIF_TAGS);
+    for(const t in sub){const {name,value}=sub[t]; if(name&&name[0]!=='_') out[name]=value;} }
+  if(ifd0[0x8825]){ const gps=readIFD(tiffStart+ifd0[0x8825].value,GPS_TAGS);
+    const raw={}; for(const t in gps){raw[gps[t].name]=gps[t].value;}
+    if(Array.isArray(raw['Latitude'])&&Array.isArray(raw['Longitude'])){
+      const dms=a=>a[0]+a[1]/60+a[2]/3600;
+      let lat=dms(raw['Latitude']); if(raw['Lat Ref']==='S')lat=-lat;
+      let lon=dms(raw['Longitude']); if(raw['Lon Ref']==='W')lon=-lon;
+      out['GPS Coordinates']=lat.toFixed(6)+', '+lon.toFixed(6);
+      out['_mapLat']=lat; out['_mapLon']=lon;
+    }
+    if(raw['Altitude']!=null) out['GPS Altitude']=(typeof raw['Altitude']==='number'?raw['Altitude'].toFixed(1):raw['Altitude'])+' m';
+    if(raw['GPS Date']) out['GPS Date']=raw['GPS Date'];
+  }
+  return out;
+}
+
+function scanJPEG(buf){
+  const dv=new DataView(buf); const meta={exif:{},segments:[],xmp:null,iptc:false};
+  if(dv.getUint16(0)!==0xFFD8) return null;
+  let o=2;
+  while(o<dv.byteLength-1){
+    if(dv.getUint8(o)!==0xFF){o++;continue;}
+    const marker=dv.getUint8(o+1);
+    if(marker===0xD9||marker===0xDA) break; // EOI or start of scan
+    if(marker>=0xD0&&marker<=0xD7){o+=2;continue;}
+    const len=dv.getUint16(o+2);
+    const segStart=o+4;
+    if(marker===0xE1){ // APP1
+      const sig=[];for(let i=0;i<6;i++)sig.push(dv.getUint8(segStart+i));
+      const s=String.fromCharCode(...sig);
+      if(s.startsWith('Exif')){ try{meta.exif=parseTIFF(dv,segStart+6);}catch(_){} meta.segments.push('EXIF'); }
+      else { // likely XMP
+        let str='';for(let i=0;i<Math.min(len-2,4000);i++)str+=String.fromCharCode(dv.getUint8(segStart+i));
+        if(str.includes('xmpmeta')||str.includes('adobe:ns')){meta.xmp=str;meta.segments.push('XMP');}
+      }
+    } else if(marker===0xED){ meta.iptc=true; meta.segments.push('IPTC/Photoshop'); }
+    else if(marker===0xE2){ meta.segments.push('ICC Profile'); }
+    else if(marker===0xFE){ meta.segments.push('Comment'); }
+    else if(marker>=0xE0&&marker<=0xEF){ meta.segments.push('APP'+(marker-0xE0)); }
+    o+=2+len;
+  }
+  return meta;
+}
+
+function scanPNG(buf){
+  const dv=new DataView(buf), meta={text:{},segments:[]};
+  const sig=[137,80,78,71,13,10,26,10]; for(let i=0;i<8;i++) if(dv.getUint8(i)!==sig[i]) return null;
+  let o=8;
+  while(o<dv.byteLength){
+    const len=dv.getUint32(o); let type='';for(let i=0;i<4;i++)type+=String.fromCharCode(dv.getUint8(o+4+i));
+    const ds=o+8;
+    if(type==='tEXt'||type==='iTXt'||type==='zTXt'){
+      let raw='';for(let i=0;i<Math.min(len,600);i++)raw+=String.fromCharCode(dv.getUint8(ds+i));
+      const key=raw.split('\0')[0]; meta.text[key||type]=raw.split('\0').slice(1).join(' ').replace(/[^\x20-\x7e]/g,'').slice(0,200);
+      if(!meta.segments.includes('Text chunks'))meta.segments.push('Text chunks');
+    } else if(type==='tIME'){ meta.segments.push('Modification time'); }
+    else if(type==='eXIf'){ try{meta.exif=parseTIFF(dv,ds);}catch(_){} meta.segments.push('EXIF'); }
+    if(type==='IEND')break;
+    o=ds+len+4;
+    if(len<0||o<=ds)break;
+  }
+  return meta;
+}
+
+/* ============================================================
+   VIEWER
+============================================================ */
+wireDrop('#viewDrop','#viewInput', files=>viewFile(files[0]));
+
+async function viewFile(file){
+  const box=$('#viewResult'); box.innerHTML='';
+  const card=el('div','card'); box.appendChild(card);
+  card.appendChild(el('div','muted','Reading…'));
+  const buf=await file.arrayBuffer();
+  let found={}, segs=[], type=file.type||'';
+  const jp=scanJPEG(buf); const pg=jp?null:scanPNG(buf);
+  if(jp){ found=jp.exif||{}; segs=jp.segments;
+    if(jp.xmp) found['XMP present']='yes';
+    if(jp.iptc) found['IPTC present']='yes';
+  } else if(pg){ Object.assign(found,pg.text); segs=pg.segments; if(pg.exif)Object.assign(found,pg.exif); }
+
+  // dimensions via image
+  const dim=await new Promise(res=>{const i=new Image();i.onload=()=>res(i.naturalWidth+' × '+i.naturalHeight+' px');i.onerror=()=>res('—');i.src=URL.createObjectURL(new Blob([buf]));});
+
+  card.innerHTML='';
+  const img=el('img','thumb'); img.src=URL.createObjectURL(new Blob([buf])); img.alt=''; card.appendChild(img);
+
+  // file basics
+  const basics={'File name':file.name,'File type':type||'unknown','File size':fmtBytes(file.size),
+    'Dimensions':dim,'Last modified':file.lastModified?new Date(file.lastModified).toLocaleString():'—'};
+  card.appendChild(sectionTable('File',basics,false));
+
+  const cleanFound={}; Object.keys(found).forEach(k=>{ if(k[0]!=='_') cleanFound[k]=found[k]; });
+  const keys=Object.keys(cleanFound);
+  if(!keys.length){
+    card.appendChild(el('div','notice ok','✅ No embedded metadata found. This image looks clean.'));
+  } else {
+    // sensitive summary
+    const hits=keys.filter(k=>SENSITIVE.has(k));
+    if(hits.length){
+      const n=el('div','notice danger');
+      n.innerHTML='<b>⚠️ Privacy-sensitive data found:</b>';
+      const ch=el('div','chips'); ch.style.marginTop='8px';
+      hits.forEach(h=>ch.appendChild(el('span','chip hit',esc(h))));
+      n.appendChild(ch);
+      if(found['_mapLat']!=null){
+        const p=el('div',null,'This photo reveals where it was taken: <b>'+esc(cleanFound['GPS Coordinates'])+'</b>.');
+        p.style.marginTop='8px'; n.appendChild(p);
+      }
+      n.appendChild(el('div','muted','<br>Use the <b>Metadata Eraser</b> tab to remove it before sharing.'));
+      card.appendChild(n);
+    }
+    card.appendChild(sectionTable('Metadata ('+keys.length+' fields)',cleanFound,true));
+  }
+  if(segs.length){
+    const g=el('div','grp'); g.appendChild(el('h3',null,'Embedded segments'));
+    const ch=el('div','chips'); segs.forEach(s=>ch.appendChild(el('span','chip',esc(s)))); g.appendChild(ch); card.appendChild(g);
+  }
+}
+
+function sectionTable(title,obj,markSensitive){
+  const g=el('div','grp'); g.appendChild(el('h3',null,esc(title)));
+  const t=el('table'); const tb=el('tbody');
+  Object.keys(obj).forEach(k=>{
+    let v=obj[k]; if(Array.isArray(v))v=v.slice(0,20).join(', ');
+    const tr=el('tr');
+    const th=el('th',null,esc(k)+(markSensitive&&SENSITIVE.has(k)?' 🔒':''));
+    const td=el('td',null,esc(v));
+    tr.appendChild(th);tr.appendChild(td);tb.appendChild(tr);
+  });
+  t.appendChild(tb);g.appendChild(t);return g;
+}
+
+/* ============================================================
+   ERASER
+============================================================ */
+$('#eraseMode').onchange=()=>{ $('#qualityWrap').style.display = $('#eraseMode').value==='reencode'?'flex':'none'; };
+$('#quality').oninput=()=>{ $('#qLabel').textContent=$('#quality').value+'%'; };
+$('#qualityWrap').style.display='none';
+wireDrop('#eraseDrop','#eraseInput', files=>files.forEach(eraseFile));
+
+// Lossless JPEG rebuild: drop APP1..APP15 & COM segments, keep APP0(JFIF) + image
+function stripJPEG(buf){
+  const dv=new DataView(buf); if(dv.getUint16(0)!==0xFFD8) return null;
+  const keep=[0xFFD8]; const out=[]; out.push(new Uint8Array([0xFF,0xD8]));
+  let o=2;
+  while(o<dv.byteLength-1){
+    if(dv.getUint8(o)!==0xFF){o++;continue;}
+    const m=dv.getUint8(o+1);
+    if(m===0xDA){ out.push(new Uint8Array(buf.slice(o))); break; } // scan → copy rest verbatim
+    if(m===0xD9){ out.push(new Uint8Array([0xFF,0xD9])); break; }
+    if(m>=0xD0&&m<=0xD7){ out.push(new Uint8Array([0xFF,m])); o+=2; continue; }
+    const len=dv.getUint16(o+2);
+    const drop=(m>=0xE1&&m<=0xEF)||m===0xFE; // APP1-15 + comments
+    if(m===0xE0){ out.push(new Uint8Array(buf.slice(o,o+2+len))); } // keep JFIF
+    else if(!drop){ out.push(new Uint8Array(buf.slice(o,o+2+len))); }
+    o+=2+len;
+  }
+  return new Blob(out,{type:'image/jpeg'});
+}
+// Lossless PNG rebuild: keep only critical chunks
+function stripPNG(buf){
+  const dv=new DataView(buf); const sig=[137,80,78,71,13,10,26,10];
+  for(let i=0;i<8;i++) if(dv.getUint8(i)!==sig[i]) return null;
+  const keepTypes=new Set(['IHDR','PLTE','IDAT','IEND','tRNS','gAMA','cHRM','sRGB','bKGD','pHYs','sBIT']);
+  const parts=[new Uint8Array(buf.slice(0,8))]; let o=8;
+  while(o<dv.byteLength){
+    const len=dv.getUint32(o); let type='';for(let i=0;i<4;i++)type+=String.fromCharCode(dv.getUint8(o+4+i));
+    const total=12+len;
+    if(keepTypes.has(type)) parts.push(new Uint8Array(buf.slice(o,o+total)));
+    o+=total; if(type==='IEND'||len<0)break;
+  }
+  return new Blob(parts,{type:'image/png'});
+}
+
+async function eraseFile(file){
+  const box=$('#eraseResult');
+  const card=el('div','card'); box.prepend(card);
+  card.appendChild(el('div',null,'<b>'+esc(file.name)+'</b>'));
+  const status=el('div','muted','Cleaning…'); card.appendChild(status);
+  try{
+    const buf=await file.arrayBuffer();
+    const before=(scanJPEG(buf)?.segments||scanPNG(buf)?.segments||[]).length;
+    const mode=$('#eraseMode').value;
+    let blob=null, note='';
+    if(mode==='lossless'){
+      if(file.type==='image/jpeg'||/\.jpe?g$/i.test(file.name)) { blob=stripJPEG(buf); note='Lossless — original pixels preserved.'; }
+      else if(file.type==='image/png'||/\.png$/i.test(file.name)) { blob=stripPNG(buf); note='Lossless — original pixels preserved.'; }
+      if(!blob){ blob=await reencode(buf,file); note='Format not eligible for lossless; re-encoded instead.'; }
+    } else {
+      blob=await reencode(buf,file); note='Re-encoded — guaranteed clean.';
+    }
+    if(!blob) throw new Error('Could not process this file.');
+    // verify
+    const outBuf=await blob.arrayBuffer();
+    const after=(scanJPEG(outBuf)?.segments||scanPNG(outBuf)?.segments||[]).filter(s=>!['APP0'].includes(s)).length;
+    status.className='notice ok';
+    status.innerHTML='✅ Cleaned. '+esc(note)+'<br>Metadata segments: '+before+' → '+after+
+      ' · '+fmtBytes(file.size)+' → '+fmtBytes(blob.size);
+    const outName=file.name.replace(/(\.[^.]+)?$/, m=>'_clean'+(m||'.jpg'));
+    const btns=el('div','row'); btns.style.marginTop='10px';
+    const b1=el('button','btn good','⬇️ Download clean file');
+    b1.onclick=()=>dl(blob,outName); btns.appendChild(b1);
+    const b2=el('button','btn','🔍 Verify in viewer');
+    b2.onclick=()=>{document.querySelector('nav button[data-tab=view]').click(); viewFile(new File([blob],outName,{type:blob.type}));};
+    btns.appendChild(b2);
+    card.appendChild(btns);
+  }catch(e){ status.className='notice danger'; status.textContent='❌ '+e.message; }
+}
+function reencode(buf,file){
+  return new Promise((res,rej)=>{
+    const img=new Image(); const url=URL.createObjectURL(new Blob([buf],{type:file.type||'image/*'}));
+    img.onload=()=>{
+      const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+      c.getContext('2d').drawImage(img,0,0);
+      const isPNG=/png/i.test(file.type)||/\.png$/i.test(file.name);
+      c.toBlob(b=>{URL.revokeObjectURL(url); b?res(b):rej(new Error('Encode failed'));},
+        isPNG?'image/png':'image/jpeg', isPNG?undefined:(+$('#quality').value/100));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Browser could not decode this image.'));};
+    img.src=url;
+  });
+}
+
+/* ============================================================
+   SHREDDER  (File System Access API)
+============================================================ */
+const hasFSA = 'showOpenFilePicker' in window;
+$('#fsaOk').classList.toggle('hidden',!hasFSA);
+$('#fsaNo').classList.toggle('hidden',hasFSA);
+
+const CHUNK=1024*256; // 256 KB
+function fillRandom(u8){ for(let i=0;i<u8.length;i+=65536) crypto.getRandomValues(u8.subarray(i,Math.min(i+65536,u8.length))); }
+
+async function overwriteHandle(handle,item,passes,onProg){
+  const file=await handle.getFile(); const size=file.size;
+  const patterns=[]; // 3-pass => 0x00,0xFF,random; 7 => extra randoms
+  if(passes===1) patterns.push({v:0}); else{
+    patterns.push({v:0x00},{v:0xFF},{v:'r'});
+    for(let i=3;i<passes;i++) patterns.push({v:'r'});
+  }
+  const totalUnits=patterns.length+1; // +final zero+truncate
+  for(let p=0;p<patterns.length;p++){
+    const w=await handle.createWritable({keepExistingData:true});
+    const chunk=new Uint8Array(Math.min(CHUNK,size||CHUNK));
+    let written=0;
+    while(written<size){
+      const n=Math.min(chunk.length,size-written); const view=chunk.subarray(0,n);
+      if(patterns[p].v==='r') fillRandom(view); else view.fill(patterns[p].v);
+      await w.write({type:'write',position:written,data:view});
+      written+=n; onProg((p+written/Math.max(size,1))/totalUnits);
+    }
+    await w.close();
+  }
+  // final: zero everything then truncate to 0
+  const wf=await handle.createWritable(); // truncates on open
+  const zc=new Uint8Array(Math.min(CHUNK,size||1));
+  let wr=0; while(wr<size){ const n=Math.min(zc.length,size-wr); await wf.write({type:'write',position:wr,data:zc.subarray(0,n)}); wr+=n; }
+  await wf.truncate(0); await wf.close();
+  onProg(1);
+  return size;
+}
+
+$('#shredPick').onclick=async()=>{
+  let handles;
+  try{ handles=await window.showOpenFilePicker({multiple:true}); }
+  catch(e){ return; } // user cancelled
+  const passes=+$('#passes').value;
+  const listBox=$('#shredList');
+  for(const h of handles){
+    const file=await h.getFile();
+    const item=el('div','fitem');
+    item.appendChild(el('div','nm',esc(file.name)+' <span class="muted" style="font-weight:400">('+fmtBytes(file.size)+')</span>'));
+    const bar=el('div','bar'); bar.style.flex='1 1 120px'; const fill=el('i'); bar.appendChild(fill); item.appendChild(bar);
+    const st=el('div','st work','waiting'); item.appendChild(st);
+    listBox.prepend(item);
+    const ok=confirm('PERMANENTLY overwrite and blank:\n\n'+file.name+' ('+fmtBytes(file.size)+')\n\nThis cannot be undone. Continue?');
+    if(!ok){ st.className='st'; st.textContent='skipped'; continue; }
+    st.textContent='shredding…';
+    try{
+      await overwriteHandle(h,item,passes,p=>{fill.style.width=Math.round(p*100)+'%';});
+      st.className='st done'; st.textContent='✅ wiped';
+      item.querySelector('.nm').innerHTML=esc(file.name)+' <span class="muted" style="font-weight:400">— now 0 bytes, safe to delete</span>';
+    }catch(e){ st.className='st err'; st.textContent='❌ '+(e.name==='NotAllowedError'?'permission denied':'failed'); }
+  }
+};
+
+/* Offline indicator honesty */
+window.addEventListener('online',()=>{});
+</script>
+</body>
+</html>
