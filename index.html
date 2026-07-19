@@ -422,8 +422,15 @@ async function viewFile(file){
       hits.forEach(h=>ch.appendChild(el('span','chip hit',esc(h))));
       n.appendChild(ch);
       if(found['_mapLat']!=null){
+        const lat=found['_mapLat'], lon=found['_mapLon'];
         const p=el('div',null,'This photo reveals where it was taken: <b>'+esc(cleanFound['GPS Coordinates'])+'</b>.');
         p.style.marginTop='8px'; n.appendChild(p);
+        const mapBtn=el('button','btn','🗺️ Open location in Maps');
+        mapBtn.style.marginTop='10px';
+        mapBtn.title='Leaves this offline tool and opens an online map in a new tab';
+        mapBtn.onclick=()=>window.open('https://www.google.com/maps/search/?api=1&query='+lat+','+lon,'_blank','noopener');
+        n.appendChild(mapBtn);
+        n.appendChild(el('div','muted','<span style="font-size:11.5px">↗ Opens an external website (needs internet) in a new tab — the toolkit itself stays offline.</span>'));
       }
       n.appendChild(el('div','muted','<br>Use the <b>Metadata Eraser</b> tab to remove it before sharing.'));
       card.appendChild(n);
