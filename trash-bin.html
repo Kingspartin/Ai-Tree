@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Secure Trash Bin — Offline Privacy Toolkit</title>
+<style>
+  :root{
+    --bg:#0b0f16; --panel:#131a26; --panel-2:#0f1520; --line:#233042;
+    --txt:#e7edf6; --muted:#9fb0c6; --accent:#4da3ff; --accent-2:#38d39f;
+    --danger:#ff6b6b; --warn:#ffcf5c; --chip:#1b2636; --radius:14px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#eef2f8; --panel:#ffffff; --panel-2:#f5f8fd; --line:#d7e0ee;
+      --txt:#132030; --muted:#5a6a80; --chip:#eef3fb; }
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;padding-bottom:env(safe-area-inset-bottom)}
+  header{padding:16px;padding-top:calc(16px + env(safe-area-inset-top));border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--panel-2));position:sticky;top:0;z-index:5}
+  .brand{display:flex;align-items:center;gap:12px;max-width:900px;margin:0 auto}
+  .logo{width:38px;height:38px;flex:0 0 auto;border-radius:10px;background:radial-gradient(120% 120% at 30% 20%,var(--danger),#8f1d1d);display:grid;place-items:center;font-size:20px;box-shadow:0 6px 18px rgba(255,107,107,.35)}
+  h1{font-size:18px;margin:0;font-weight:700}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .back{margin-left:auto;font-size:12.5px;font-weight:600;text-decoration:none;color:var(--muted);border:1px solid var(--line);background:var(--chip);padding:8px 12px;border-radius:999px}
+  .back:hover{border-color:var(--accent);color:var(--txt)}
+  main{max-width:900px;margin:0 auto;padding:18px 16px 40px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+  .drop{border:1.5px dashed var(--line);border-radius:var(--radius);padding:26px 16px;text-align:center;background:var(--panel-2);cursor:pointer;transition:.15s}
+  .drop.hover{border-color:var(--danger);background:rgba(255,107,107,.08)}
+  .drop .ico{font-size:30px} .drop b{display:block;margin-top:6px} .drop small{color:var(--muted)}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .btn{border:1px solid var(--line);background:var(--chip);color:var(--txt);padding:10px 14px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--accent)}
+  .btn.danger{background:var(--danger);color:#1a0606;border-color:var(--danger)}
+  .btn.good{background:var(--accent-2);color:#04140d;border-color:var(--accent-2)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .muted{color:var(--muted)} .hidden{display:none!important}
+  .notice{border-radius:10px;padding:11px 13px;font-size:13px;border:1px solid var(--line);background:var(--panel-2)}
+  .notice.warn{border-color:rgba(255,207,92,.4);background:rgba(255,207,92,.09)}
+  .notice.danger{border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.09)}
+  .notice.ok{border-color:rgba(56,211,159,.4);background:rgba(56,211,159,.1)}
+  .field{display:flex;flex-direction:column;gap:5px;margin:10px 0}
+  .field label{font-size:12.5px;color:var(--muted);font-weight:600}
+  select{background:var(--chip);color:var(--txt);border:1px solid var(--line);padding:9px;border-radius:10px;font-size:14px;width:100%}
+  .bar{height:9px;border-radius:999px;background:var(--panel-2);overflow:hidden;border:1px solid var(--line)}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--warn),var(--danger));transition:width .2s}
+  .filelist{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .fitem{display:flex;gap:10px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .fitem .nm{font-weight:600;font-size:13.5px;word-break:break-all;flex:1 1 140px}
+  .fitem .st{font-size:12px;white-space:nowrap}
+  .st.done{color:var(--accent-2)} .st.err{color:var(--danger)} .st.work{color:var(--warn)}
+  .x{border:none;background:transparent;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px}
+  .x:hover{color:var(--danger)}
+  .count{font-size:12.5px;color:var(--muted)}
+  code{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12.5px}
+  footer{max-width:900px;margin:0 auto;padding:10px 16px 34px;color:var(--muted);font-size:12px;text-align:center}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">🗑️</div>
+    <div>
+      <h1>Secure Trash Bin</h1>
+      <div class="sub">Collect files, then destroy them for good — offline</div>
+    </div>
+    <a class="back" href="index.html">← Toolkit</a>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="notice warn" style="margin-bottom:14px">
+      <b>⚠️ How this bin works.</b> Files you add stay in a list. <b>Empty Bin</b> overwrites each file's bytes
+      in place with multiple passes, then blanks it to <code>0 bytes</code> so you can delete an empty shell —
+      this is permanent, there is no undo. Requires <b>Chrome / Edge (desktop or Android)</b>; the “Add files”
+      button works everywhere those run. <b>On USB sticks &amp; SSDs, wear-levelling may leave old copies in
+      cells software can't reach — encrypt the drive for real protection.</b>
+    </div>
+
+    <div id="unsupported" class="notice danger hidden">
+      <b>This browser can't overwrite files.</b> The File System Access API isn't available here
+      (common on iOS Safari &amp; Firefox). Use Chrome/Edge, or your OS tools: <code>shred -u file</code>
+      (Linux), Files app delete + empty “Recently Deleted” (iOS). Then encrypt the drive so leftovers are
+      unreadable.
+    </div>
+
+    <div id="supported" class="hidden">
+      <div class="drop" id="drop">
+        <div class="ico">🗑️</div>
+        <b>Tap to add files to the bin</b>
+        <small>…or drag &amp; drop files here (desktop). Nothing is deleted until you Empty the bin.</small>
+      </div>
+
+      <div class="field" style="margin-top:14px">
+        <label for="passes">Overwrite passes when emptying</label>
+        <select id="passes">
+          <option value="1">1 pass — quick (zeros)</option>
+          <option value="3" selected>3 passes — DoD-style (0x00, 0xFF, random)</option>
+          <option value="7">7 passes — paranoid</option>
+        </select>
+      </div>
+
+      <div class="row" style="margin-top:6px">
+        <button class="btn danger" id="emptyBtn" disabled>🔥 Empty Bin (destroy all)</button>
+        <button class="btn" id="clearBtn" disabled>Clear list (don't delete files)</button>
+        <span class="count" id="count">Bin is empty.</span>
+      </div>
+
+      <div class="filelist" id="list"></div>
+    </div>
+  </div>
+</main>
+
+<footer>Secure Trash Bin · part of the Offline Privacy Toolkit · 100% client-side, no internet</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtBytes=n=>{if(n<1024)return n+' B';const u=['KB','MB','GB'];let i=-1;do{n/=1024;i++;}while(n>=1024&&i<2);return n.toFixed(n<10?2:1)+' '+u[i];};
+
+const hasFSA='showOpenFilePicker' in window;
+$('#supported').classList.toggle('hidden',!hasFSA);
+$('#unsupported').classList.toggle('hidden',hasFSA);
+
+/* bin = array of {handle, name, size, done} */
+const bin=[];
+
+async function addHandles(handles){
+  for(const h of handles){
+    try{
+      const f=await h.getFile();
+      // avoid obvious duplicates by name+size
+      if(bin.some(b=>b.name===f.name && b.size===f.size && !b.done)) continue;
+      bin.push({handle:h,name:f.name,size:f.size,done:false});
+    }catch(_){}
+  }
+  render();
+}
+
+$('#drop').onclick=async()=>{
+  try{ const handles=await window.showOpenFilePicker({multiple:true}); addHandles(handles); }
+  catch(_){ /* cancelled */ }
+};
+
+// Drag & drop with real write-capable handles (Chrome desktop)
+const drop=$('#drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hover');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hover');}));
+drop.addEventListener('drop',async e=>{
+  e.preventDefault();
+  const items=[...(e.dataTransfer?.items||[])];
+  const handles=[];
+  for(const it of items){
+    if(it.kind==='file' && it.getAsFileSystemHandle){
+      try{ const h=await it.getAsFileSystemHandle(); if(h && h.kind==='file') handles.push(h); }catch(_){}
+    }
+  }
+  if(handles.length) addHandles(handles);
+  else alert('This browser gave dropped files without write access — use the “Add files” button instead so the bin can overwrite them.');
+});
+
+function render(){
+  const list=$('#list'); list.innerHTML='';
+  const pending=bin.filter(b=>!b.done);
+  bin.forEach((b,idx)=>{
+    const item=el('div','fitem');
+    const nm=el('div','nm', esc(b.name)+' <span class="muted" style="font-weight:400">('+fmtBytes(b.size)+')</span>');
+    item.appendChild(nm);
+    const bar=el('div','bar'); bar.style.flex='0 0 90px'; const fill=el('i'); bar.appendChild(fill); item.appendChild(bar);
+    const st=el('div', 'st '+(b.done?'done':''), b.done?'✅ wiped':'in bin'); item.appendChild(st);
+    b._fill=fill; b._st=st; b._nm=nm;
+    if(!b.done){
+      const x=el('button','x','✕'); x.title='Remove from bin (does not delete the file)';
+      x.onclick=()=>{bin.splice(idx,1);render();};
+      item.appendChild(x);
+    }
+    list.appendChild(item);
+  });
+  const totalSize=pending.reduce((a,b)=>a+b.size,0);
+  $('#count').textContent = pending.length ? (pending.length+' file'+(pending.length>1?'s':'')+' · '+fmtBytes(totalSize)+' to destroy') : (bin.length? 'All done.' : 'Bin is empty.');
+  $('#emptyBtn').disabled = pending.length===0;
+  $('#clearBtn').disabled = bin.length===0;
+}
+
+$('#clearBtn').onclick=()=>{ bin.length=0; render(); };
+
+/* ---------- secure overwrite (same technique as the toolkit's shredder) ---------- */
+const CHUNK=1024*256;
+function fillRandom(u8){ for(let i=0;i<u8.length;i+=65536) crypto.getRandomValues(u8.subarray(i,Math.min(i+65536,u8.length))); }
+async function overwriteHandle(handle,passes,onProg){
+  const file=await handle.getFile(); const size=file.size;
+  const patterns=[];
+  if(passes===1) patterns.push({v:0}); else{ patterns.push({v:0x00},{v:0xFF},{v:'r'}); for(let i=3;i<passes;i++)patterns.push({v:'r'}); }
+  const totalUnits=patterns.length+1;
+  for(let p=0;p<patterns.length;p++){
+    const w=await handle.createWritable({keepExistingData:true});
+    const chunk=new Uint8Array(Math.min(CHUNK,size||CHUNK)); let written=0;
+    while(written<size){
+      const n=Math.min(chunk.length,size-written); const view=chunk.subarray(0,n);
+      if(patterns[p].v==='r') fillRandom(view); else view.fill(patterns[p].v);
+      await w.write({type:'write',position:written,data:view});
+      written+=n; onProg((p+written/Math.max(size,1))/totalUnits);
+    }
+    await w.close();
+  }
+  const wf=await handle.createWritable();
+  const zc=new Uint8Array(Math.min(CHUNK,size||1)); let wr=0;
+  while(wr<size){ const n=Math.min(zc.length,size-wr); await wf.write({type:'write',position:wr,data:zc.subarray(0,n)}); wr+=n; }
+  await wf.truncate(0); await wf.close();
+  onProg(1);
+}
+
+$('#emptyBtn').onclick=async()=>{
+  const pending=bin.filter(b=>!b.done);
+  if(!pending.length) return;
+  const totalSize=pending.reduce((a,b)=>a+b.size,0);
+  if(!confirm('PERMANENTLY destroy '+pending.length+' file(s) ('+fmtBytes(totalSize)+')?\n\nEach will be overwritten and blanked to 0 bytes. This cannot be undone.')) return;
+  const passes=+$('#passes').value;
+  $('#emptyBtn').disabled=true; $('#clearBtn').disabled=true;
+  for(const b of pending){
+    b._st.className='st work'; b._st.textContent='shredding…';
+    try{
+      await overwriteHandle(b.handle,passes,p=>{ b._fill.style.width=Math.round(p*100)+'%'; });
+      b.done=true; b._st.className='st done'; b._st.textContent='✅ wiped';
+      b._nm.innerHTML=esc(b.name)+' <span class="muted" style="font-weight:400">— now 0 bytes, safe to delete</span>';
+    }catch(e){
+      b._st.className='st err'; b._st.textContent='❌ '+(e.name==='NotAllowedError'?'permission denied':'failed');
+    }
+  }
+  render();
+};
+
+render();
+</script>
+</body>
+</html>
