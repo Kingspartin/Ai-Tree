@@ -1,0 +1,5 @@
+# Created automatically on first run from ./vendor/wheels — machine-specific,
+# not meant to be committed.
+libs/
+__pycache__/
+*.pyc
