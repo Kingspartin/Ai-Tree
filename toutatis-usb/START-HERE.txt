@@ -1,0 +1,58 @@
+========================================================
+ TOUTATIS  —  Portable USB Edition
+ Instagram OSINT tool (by megadose)
+========================================================
+
+WHAT THIS IS
+------------
+A ready-to-run copy of Toutatis that looks up public and partly-hidden
+info tied to an Instagram account (username, full name, follower counts,
+public email/phone if the account exposes them, and obfuscated email/phone
+hints). Everything needed to run it is already in this folder.
+
+
+HOW TO USE IT
+-------------
+1. Copy this whole folder onto your USB stick.
+
+2. Plug the USB into any computer that has Python 3 installed.
+   (Don't have Python? Get it free at https://www.python.org/downloads/
+    On Windows, tick "Add Python to PATH" during install.)
+
+3. Double-click the launcher for that computer:
+
+      Windows  ->  "Toutatis (Windows).bat"
+      Mac      ->  "Toutatis (Mac).command"
+      Linux    ->  run  ./toutatis.sh  in a terminal
+
+4. The first time only, it sets up its bundled parts (a few seconds,
+   no internet needed). Then it asks you a couple of questions.
+
+
+WHAT YOU NEED TO PROVIDE
+------------------------
+Your own Instagram "sessionid". To find it:
+  - Log in to instagram.com in a web browser.
+  - Open the browser Developer Tools (F12).
+  - Go to:  Application (or Storage) -> Cookies -> https://www.instagram.com
+  - Copy the value of the cookie named  sessionid.
+
+You then paste that when the tool asks, and give it a username to look up.
+
+
+ADVANCED (optional)
+-------------------
+The classic command-line still works from a terminal:
+
+    python toutatis_portable.py -u <username>    -s <sessionid>
+    python toutatis_portable.py -i <instagramID> -s <sessionid>
+
+
+NOTES
+-----
+* Nothing is installed onto the host computer. A "libs" folder is created
+  inside THIS folder on first run and can be deleted anytime.
+* This uses only your own logged-in session and Instagram's own API.
+  Use it responsibly and only where you are authorized to. See LICENSE.
+* Original project: https://github.com/megadose/toutatis  (GPL-3.0)
+========================================================
