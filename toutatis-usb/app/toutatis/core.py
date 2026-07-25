@@ -110,23 +110,31 @@ def main():
 
     infos = infos["user"]
 
-    print("Informations about     : " + infos["username"])
-    print("userID                 : " + infos["userID"])
-    print("Full Name              : " + infos["full_name"])
-    print("Verified               : " + str(infos['is_verified']) + " | Is buisness Account : " + str(
-        infos["is_business"]))
-    print("Is private Account     : " + str(infos["is_private"]))
-    print(
-        "Follower               : " + str(infos["follower_count"]) + " | Following : " + str(infos["following_count"]))
-    print("Number of posts        : " + str(infos["media_count"]))
-    # print("Number of tag in posts : "+str(infos["following_tag_count"]))
-    if infos["external_url"]:
-        print("External url           : " + infos["external_url"])
-    print("IGTV posts             : " + str(infos["total_igtv_videos"]))
-    print("Biography              : " + (f"""\n{" " * 25}""").join(infos["biography"].split("\n")))
-    print("Linked WhatsApp        : " + str(infos["is_whatsapp_linked"]))
-    print("Memorial Account       : " + str(infos["is_memorialized"]))
-    print("New Instagram user     : " + str(infos["is_new_to_instagram"]))
+    # Instagram frequently adds/removes fields (e.g. it dropped IGTV), so read
+    # everything defensively and only print what the API actually returned.
+    def show(label, key, transform=str):
+        if key in infos and infos[key] not in (None, ""):
+            print(label + " : " + transform(infos[key]))
+
+    show("Informations about    ", "username")
+    show("userID                ", "userID")
+    show("Full Name             ", "full_name")
+    if "is_verified" in infos or "is_business" in infos:
+        print("Verified               : " + str(infos.get("is_verified")) +
+              " | Is buisness Account : " + str(infos.get("is_business")))
+    show("Is private Account    ", "is_private")
+    if "follower_count" in infos or "following_count" in infos:
+        print("Follower               : " + str(infos.get("follower_count")) +
+              " | Following : " + str(infos.get("following_count")))
+    show("Number of posts       ", "media_count")
+    show("External url          ", "external_url")
+    show("IGTV posts            ", "total_igtv_videos")
+    if infos.get("biography"):
+        print("Biography              : " +
+              (f"""\n{" " * 25}""").join(infos["biography"].split("\n")))
+    show("Linked WhatsApp       ", "is_whatsapp_linked")
+    show("Memorial Account      ", "is_memorialized")
+    show("New Instagram user    ", "is_new_to_instagram")
 
     if "public_email" in infos.keys():
         if infos["public_email"]:
@@ -168,4 +176,6 @@ def main():
             else:
                 print("No obfuscated phone found")
     print("-" * 24)
-    print("Profile Picture        : " + infos["hd_profile_pic_url_info"]["url"])
+    pic = infos.get("hd_profile_pic_url_info") or {}
+    if pic.get("url"):
+        print("Profile Picture        : " + pic["url"])
