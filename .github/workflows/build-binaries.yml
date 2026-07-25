@@ -1,0 +1,85 @@
+name: build-binaries
+
+# Builds standalone, no-Python-required executables of the portable Toutatis
+# launcher for Windows, macOS, and Linux, and publishes them as downloadable
+# assets on a "usb-binaries" pre-release.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/toutatis-usb-deployment-0ncgsj
+    paths:
+      - 'toutatis-usb/**'
+      - '.github/workflows/build-binaries.yml'
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+    working-directory: toutatis-usb
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: toutatis-windows-x64.exe
+            built: toutatis.exe
+          - os: macos-latest
+            asset: toutatis-macos-arm64
+            built: toutatis
+          - os: ubuntu-latest
+            asset: toutatis-linux-x64
+            built: toutatis
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: python -m pip install --upgrade pip requests phonenumbers pycountry pyinstaller
+
+      - name: Build standalone binary
+        run: >
+          pyinstaller --onefile --console --clean
+          --name toutatis
+          --paths app
+          --hidden-import toutatis.core
+          toutatis_portable.py
+
+      - name: Rename for release
+        run: mv "dist/${{ matrix.built }}" "dist/${{ matrix.asset }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: toutatis-usb/dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: bins
+          merge-multiple: true
+
+      - name: Publish pre-release with binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: usb-binaries
+          name: Toutatis portable binaries
+          prerelease: true
+          fail_on_unmatched_files: true
+          files: bins/*

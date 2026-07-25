@@ -55,6 +55,9 @@ def _pip_install(online):
 
 
 def ensure_dependencies():
+    # Frozen (PyInstaller .exe/binary): dependencies are baked in — nothing to do.
+    if getattr(sys, "frozen", False):
+        return True
     if _deps_available():
         return True
 
