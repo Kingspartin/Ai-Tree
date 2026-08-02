@@ -1,0 +1,26 @@
+{
+  "name": "ai-tree",
+  "version": "0.1.0",
+  "description": "Deterministic number modeling — every number gets one repeating pattern",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./pattern": "./src/pattern.js",
+    "./tree": "./src/tree.js",
+    "./format": "./src/format.js"
+  },
+  "bin": {
+    "ai-tree": "./cli.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node cli.js 1 4 5",
+    "web": "node scripts/serve.js"
+  },
+  "files": [
+    "src",
+    "cli.js"
+  ],
+  "license": "MIT"
+}

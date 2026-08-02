@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>ai-tree · number patterns</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #151b23;
+    --line: #232c38;
+    --ink: #e6edf3;
+    --muted: #8b96a5;
+    --accent: #4cc2b0;
+    --accent-soft: #4cc2b033;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f8fa; --panel: #ffffff; --line: #d9e0e8;
+      --ink: #16202b; --muted: #5c6874; --accent: #12796b; --accent-soft: #12796b1f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 1rem 1rem calc(2rem + env(safe-area-inset-bottom));
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 34rem; margin: 0 auto; display: grid; gap: 1rem; }
+  h1 { font-size: 1.25rem; margin: 0; letter-spacing: -0.01em; }
+  h1 span { color: var(--muted); font-weight: 400; }
+  h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 0.6rem; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 0.9rem; padding: 1rem; }
+  label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.35rem; }
+  input[type="number"] {
+    width: 100%; padding: 0.7rem 0.8rem; font: inherit; font-variant-numeric: tabular-nums;
+    color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 0.6rem;
+  }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* minmax(0, …) so the number inputs shrink instead of forcing the page wide */
+  .controls { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 0.6rem; }
+  .controls > div { min-width: 0; }
+  .presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+  .presets button {
+    flex: 1 1 auto; min-width: 3rem; min-height: 2.6rem; padding: 0.4rem 0.7rem; font: inherit;
+    color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 0.6rem; cursor: pointer;
+  }
+  .presets button:hover { border-color: var(--accent); }
+  .strip { display: flex; flex-wrap: wrap; gap: 0.35rem; font-variant-numeric: tabular-nums; }
+  .strip b {
+    min-width: 2.1rem; padding: 0.45rem 0.3rem; text-align: center; font-weight: 600;
+    border-radius: 0.5rem; background: var(--accent-soft); color: var(--accent);
+  }
+  .strip b.echo { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
+  .meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin-top: 0.8rem; color: var(--muted); font-size: 0.85rem; }
+  .meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; color: var(--muted); word-break: break-all; }
+  svg { display: block; width: 100%; height: auto; }
+  .rings { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem; }
+  .ring figcaption { margin-top: 0.4rem; text-align: center; font-size: 0.8rem; color: var(--muted); }
+  ul.tree { list-style: none; margin: 0; padding-left: 0.9rem; border-left: 1px solid var(--line); }
+  ul.tree ul { margin-top: 0.35rem; }
+  ul.tree li { margin: 0.35rem 0; font-variant-numeric: tabular-nums; }
+  .node { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .node em { font-style: normal; font-size: 0.7rem; letter-spacing: 0.04em; color: var(--muted); }
+  .node b {
+    min-width: 1.9rem; padding: 0.15rem 0.4rem; text-align: center;
+    border-radius: 0.4rem; background: var(--accent-soft); color: var(--accent);
+  }
+  .node.repeat b { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
+  footer { color: var(--muted); font-size: 0.8rem; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ai-tree <span>· one repeating pattern per number</span></h1>
+
+  <section>
+    <div class="controls">
+      <div>
+        <label for="seed">number</label>
+        <input id="seed" type="number" value="4" step="1" inputmode="numeric">
+      </div>
+      <div>
+        <label for="modulus">ring</label>
+        <input id="modulus" type="number" value="9" min="2" max="60" step="1" inputmode="numeric">
+      </div>
+      <div>
+        <label for="factor">factor</label>
+        <input id="factor" type="number" value="2" min="0" max="20" step="1" inputmode="numeric">
+      </div>
+    </div>
+    <div class="presets" id="presets"></div>
+  </section>
+
+  <section>
+    <h2>pattern</h2>
+    <div class="strip" id="strip"></div>
+    <div class="meta" id="meta"></div>
+    <div class="meta"><code id="signature"></code></div>
+  </section>
+
+  <section>
+    <h2>shape</h2>
+    <div class="rings">
+      <figure class="ring" style="margin:0">
+        <div id="ladder-ring"></div>
+        <figcaption>ladder — every step of +n</figcaption>
+      </figure>
+      <figure class="ring" style="margin:0">
+        <div id="orbit-ring"></div>
+        <figcaption>orbit — every step of ×f</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>tree</h2>
+    <div id="tree"></div>
+  </section>
+
+  <footer>same number in · same pattern out · every time</footer>
+</main>
+
+<script type="module">
+import { model } from '../src/index.js';
+
+const fields = {
+  seed: document.getElementById('seed'),
+  modulus: document.getElementById('modulus'),
+  factor: document.getElementById('factor'),
+};
+const out = {
+  strip: document.getElementById('strip'),
+  meta: document.getElementById('meta'),
+  signature: document.getElementById('signature'),
+  ladder: document.getElementById('ladder-ring'),
+  orbit: document.getElementById('orbit-ring'),
+  tree: document.getElementById('tree'),
+};
+
+const SVG = 'http://www.w3.org/2000/svg';
+
+/** Draw a cycle as a closed path around a ring of `modulus` labelled points. */
+function ring(values, modulus) {
+  const size = 200;
+  const mid = size / 2;
+  const radius = mid - 22;
+  const at = (value) => {
+    const angle = ((value % modulus) / modulus) * Math.PI * 2 - Math.PI / 2;
+    return [mid + radius * Math.cos(angle), mid + radius * Math.sin(angle)];
+  };
+
+  const svg = document.createElementNS(SVG, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', `pattern ${values.join(', ')} on a ring of ${modulus}`);
+
+  const circle = document.createElementNS(SVG, 'circle');
+  circle.setAttribute('cx', mid);
+  circle.setAttribute('cy', mid);
+  circle.setAttribute('r', radius);
+  circle.setAttribute('fill', 'none');
+  circle.setAttribute('stroke', 'var(--line)');
+  svg.append(circle);
+
+  if (values.length > 1) {
+    const path = document.createElementNS(SVG, 'path');
+    const points = values.map(at);
+    path.setAttribute('d', points.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') + ' Z');
+    path.setAttribute('fill', 'var(--accent-soft)');
+    path.setAttribute('stroke', 'var(--accent)');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.append(path);
+  }
+
+  const shown = new Set(values);
+  for (let value = 1; value <= modulus; value++) {
+    const [x, y] = at(value);
+    const dot = document.createElementNS(SVG, 'circle');
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', y);
+    dot.setAttribute('r', shown.has(value) ? 4 : 2);
+    dot.setAttribute('fill', shown.has(value) ? 'var(--accent)' : 'var(--line)');
+    svg.append(dot);
+
+    if (modulus <= 24) {
+      const label = document.createElementNS(SVG, 'text');
+      const [lx, ly] = [mid + (radius + 13) * (x - mid) / radius, mid + (radius + 13) * (y - mid) / radius];
+      label.setAttribute('x', lx);
+      label.setAttribute('y', ly + 4);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('font-size', '11');
+      label.setAttribute('fill', shown.has(value) ? 'var(--ink)' : 'var(--muted)');
+      label.textContent = value;
+      svg.append(label);
+    }
+  }
+  return svg;
+}
+
+function renderStrip(m) {
+  out.strip.replaceChildren(
+    ...m.pattern.map((value) => cell(value, false)),
+    ...m.take(Math.min(m.period, 5), m.period).map((value) => cell(value, true)),
+  );
+}
+
+function cell(value, echo) {
+  const el = document.createElement('b');
+  el.textContent = value;
+  if (echo) el.className = 'echo';
+  return el;
+}
+
+function renderMeta(m) {
+  const items = [
+    ['root', m.root],
+    ['period', m.period],
+    ['orbit', `${m.orbit.cycle.join(' ')} (${m.orbit.period})`],
+    ['mirror', m.mirror],
+    ['tree', `${m.tree.size} nodes`],
+  ];
+  out.meta.replaceChildren(
+    ...items.map(([name, value]) => {
+      const el = document.createElement('span');
+      el.append(`${name} `);
+      const strong = document.createElement('b');
+      strong.textContent = value;
+      el.append(strong);
+      return el;
+    }),
+  );
+}
+
+function renderTree(node) {
+  const list = document.createElement('ul');
+  list.className = 'tree';
+  const item = document.createElement('li');
+
+  const label = document.createElement('span');
+  label.className = node.repeat ? 'node repeat' : 'node';
+  if (node.rule) {
+    const rule = document.createElement('em');
+    rule.textContent = node.rule;
+    label.append(rule);
+  }
+  const value = document.createElement('b');
+  value.textContent = node.value;
+  label.append(value);
+  if (node.repeat) label.append('↺');
+  item.append(label);
+
+  if (node.children.length) {
+    const children = document.createElement('ul');
+    children.className = 'tree';
+    for (const child of node.children) children.append(...renderTree(child).children);
+    item.append(children);
+  }
+  list.append(item);
+  return list;
+}
+
+function render() {
+  const seed = Number.parseInt(fields.seed.value, 10);
+  const modulus = clamp(Number.parseInt(fields.modulus.value, 10), 2, 60, 9);
+  const factor = clamp(Number.parseInt(fields.factor.value, 10), 0, 20, 2);
+  if (!Number.isInteger(seed)) return;
+
+  const m = model(seed, { modulus, factor, depth: 3 });
+
+  renderStrip(m);
+  renderMeta(m);
+  out.signature.textContent = m.signature;
+  out.ladder.replaceChildren(ring(m.pattern, modulus));
+  out.orbit.replaceChildren(ring(m.orbit.cycle, modulus));
+  out.tree.replaceChildren(renderTree(m.tree));
+}
+
+function clamp(value, min, max, fallback) {
+  if (!Number.isInteger(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
+for (const field of Object.values(fields)) field.addEventListener('input', render);
+
+const presets = document.getElementById('presets');
+for (const value of [1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 37]) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = value;
+  button.addEventListener('click', () => {
+    fields.seed.value = value;
+    render();
+  });
+  presets.append(button);
+}
+
+render();
+</script>
+</body>
+</html>
