@@ -36,7 +36,7 @@
   h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 0.6rem; }
   section { background: var(--panel); border: 1px solid var(--line); border-radius: 0.9rem; padding: 1rem; }
   label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.35rem; }
-  input[type="number"] {
+  input[type="number"], input[type="text"] {
     width: 100%; padding: 0.7rem 0.8rem; font: inherit; font-variant-numeric: tabular-nums;
     color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 0.6rem;
   }
@@ -74,6 +74,17 @@
   }
   .node.repeat b { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
   footer { color: var(--muted); font-size: 0.8rem; text-align: center; }
+  .law { margin-top: 0.9rem; display: grid; gap: 0.5rem; }
+  .law .rule { font-size: 1.05rem; font-weight: 600; }
+  .law .rule.weak { font-weight: 400; color: var(--muted); }
+  .tag {
+    display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px;
+    font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .tag.warn { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
+  .also { color: var(--muted); font-size: 0.8rem; }
+  .also span { white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -124,11 +135,20 @@
     <div id="tree"></div>
   </section>
 
+  <section>
+    <h2>find a law</h2>
+    <label for="sequence">any sequence</label>
+    <input id="sequence" type="text" value="1, 1, 2, 3, 5, 8" inputmode="numeric"
+           autocomplete="off" spellcheck="false" placeholder="1, 1, 2, 3, 5, 8">
+    <div class="presets" id="sequence-presets"></div>
+    <div id="law"></div>
+  </section>
+
   <footer>same number in · same pattern out · every time</footer>
 </main>
 
 <script type="module">
-import { model } from '../src/index.js';
+import { model, discover } from '../src/index.js';
 
 const fields = {
   seed: document.getElementById('seed'),
@@ -289,6 +309,118 @@ function clamp(value, min, max, fallback) {
 }
 
 for (const field of Object.values(fields)) field.addEventListener('input', render);
+
+/* ---- find a law -------------------------------------------------- */
+
+const sequenceField = document.getElementById('sequence');
+const lawOut = document.getElementById('law');
+
+function findLaw() {
+  const terms = sequenceField.value
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .map(Number)
+    .filter(Number.isFinite);
+
+  const box = document.createElement('div');
+  box.className = 'law';
+
+  if (terms.length < 2) {
+    box.append(line('type at least two numbers', 'also'));
+    lawOut.replaceChildren(box);
+    return;
+  }
+
+  let result;
+  try {
+    result = discover(terms);
+  } catch {
+    box.append(line('could not read that sequence', 'also'));
+    lawOut.replaceChildren(box);
+    return;
+  }
+
+  if (!result.law) {
+    box.append(line(`no law found — ${result.tried} methods tried`, 'rule weak'));
+    lawOut.replaceChildren(box);
+    return;
+  }
+
+  const weak = result.confidence === 'overfit';
+  const rule = line(result.law.describe, weak ? 'rule weak' : 'rule');
+  box.append(rule);
+
+  const tags = document.createElement('div');
+  tags.append(tag(result.law.method), tag(result.confidence, weak));
+  box.append(tags);
+
+  const strip = document.createElement('div');
+  strip.className = 'strip';
+  for (const value of terms) strip.append(cell(value, false));
+  for (const value of result.next(5)) strip.append(cell(value, true));
+  box.append(strip);
+
+  if (result.law.projection) {
+    box.append(line(`predicts the ${result.law.projection}, not the raw value`, 'also'));
+  }
+  if (weak) {
+    box.append(line('as many parameters as terms — this fits any sequence at all', 'also'));
+  }
+
+  const others = result.candidates.slice(1);
+  if (others.length) {
+    const also = document.createElement('div');
+    also.className = 'also';
+    also.append('also fitted: ');
+    others.forEach((candidate, i) => {
+      const name = document.createElement('span');
+      name.textContent = candidate.method;
+      also.append(name, i < others.length - 1 ? ', ' : '');
+    });
+    box.append(also);
+  }
+
+  lawOut.replaceChildren(box);
+}
+
+function line(text, className) {
+  const el = document.createElement('div');
+  el.className = className;
+  el.textContent = text;
+  return el;
+}
+
+function tag(text, warn = false) {
+  const el = document.createElement('span');
+  el.className = warn ? 'tag warn' : 'tag';
+  el.textContent = text;
+  el.style.marginRight = '0.4rem';
+  return el;
+}
+
+sequenceField.addEventListener('input', findLaw);
+
+const sequencePresets = document.getElementById('sequence-presets');
+for (const [label, value] of [
+  ['fibonacci', '1, 1, 2, 3, 5, 8, 13'],
+  ['squares', '1, 4, 9, 16, 25, 36'],
+  ['primes', '2, 3, 5, 7, 11, 13, 17'],
+  ['factorial', '1, 1, 2, 6, 24, 120'],
+  ['loop', '3, 1, 4, 3, 1, 4, 3, 1, 4'],
+  ['woven', '2, 9, 4, 11, 6, 13, 8'],
+  ['noise', '12, 7, 19, 4, 88, 3'],
+]) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = label;
+  button.addEventListener('click', () => {
+    sequenceField.value = value;
+    findLaw();
+  });
+  sequencePresets.append(button);
+}
+
+findLaw();
 
 const presets = document.getElementById('presets');
 for (const value of [1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 37]) {
