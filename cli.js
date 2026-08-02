@@ -9,14 +9,15 @@
  */
 
 import { model, families } from './src/model.js';
-import { discover } from './src/discover.js';
-import { formatModel, formatTable, formatDiscovery } from './src/format.js';
+import { discover, stepRule } from './src/discover.js';
+import { formatModel, formatTable, formatDiscovery, formatStep } from './src/format.js';
 
 const USAGE = `ai-tree — number pattern modeling
 
 usage
   node cli.js <number...> [options]         model each number
   node cli.js --fit <sequence> [options]    find the law behind a sequence
+  node cli.js --step <sequence> [options]   find one rule f with next = f(current)
 
 options
   --mod <n>        ring size, default 9 (9 gives digital roots)
@@ -26,6 +27,8 @@ options
   --table          one row per number instead of full reports
   --families <a-b> group every number in the range by the pattern it produces
   --fit <seq>      discover the rule mapping each term of a sequence to the next
+  --step <seq>     stricter: one rule f applied to every number the same way,
+                   reported with the loop that iterating it settles into
   --next <n>       how many terms to predict, default 6
   --all            with --fit, list every method that fitted
   --json           emit JSON
@@ -37,7 +40,9 @@ examples
   node cli.js 7 --mod 12 --factor 3
   node cli.js --families 1-27
   node cli.js --fit 1,1,2,3,5,8
-  node cli.js --fit "3 1 4 3 1 4" --all`;
+  node cli.js --fit "3 1 4 3 1 4" --all
+  node cli.js --step 4,8,3,7,2,6,1,5,9
+  node cli.js --step 6,3,10,5,16,8,4,2,1`;
 
 function parseArgs(argv) {
   const options = {};
@@ -47,6 +52,7 @@ function parseArgs(argv) {
   let range = null;
   let repeats = 2;
   let sequence = null;
+  let strict = false;
   let next = 6;
   let all = false;
 
@@ -80,6 +86,10 @@ function parseArgs(argv) {
       case '--fit':
         sequence = readSequence(argv[++i]);
         break;
+      case '--step':
+        sequence = readSequence(argv[++i]);
+        strict = true;
+        break;
       case '--next':
         next = readNumber(argv[++i], '--next');
         break;
@@ -92,7 +102,7 @@ function parseArgs(argv) {
       }
     }
   }
-  return { seeds, options, table, json, range, repeats, sequence, next, all, help: false };
+  return { seeds, options, table, json, range, repeats, sequence, strict, next, all, help: false };
 }
 
 function readNumber(raw, name) {
@@ -128,6 +138,16 @@ function main(argv) {
   if (args.help || (!args.seeds.length && !args.range && !args.sequence)) {
     console.log(USAGE);
     return 0;
+  }
+
+  if (args.sequence && args.strict) {
+    const result = stepRule(args.sequence);
+    if (args.json) {
+      console.log(JSON.stringify(serializeStep(result, args.next), null, 2));
+      return result.rule ? 0 : 1;
+    }
+    console.log(formatStep(result, { next: args.next, all: args.all }));
+    return result.rule ? 0 : 1;
   }
 
   if (args.sequence) {
@@ -170,18 +190,32 @@ function main(argv) {
   return 0;
 }
 
+/** A candidate without its function members, so it can be serialized. */
+function plainCandidate({ term, termExact, apply, next: predict, ...rest }, count) {
+  return { ...rest, predicted: predict(count) };
+}
+
 /** Drop the function members so a model can be serialized. */
 function strip(m) {
   const { at, take, ...rest } = m;
   return rest;
 }
 
+/** Same idea for a step rule result. */
+function serializeStep(result, next) {
+  return {
+    input: result.input,
+    confidence: result.confidence,
+    impossible: result.impossible,
+    rule: result.rule ? plainCandidate(result.rule, next) : null,
+    cycle: result.cycle,
+    candidates: result.candidates.map((candidate) => plainCandidate(candidate, next)),
+  };
+}
+
 /** Same idea for a discovery result: keep the findings, drop the machinery. */
 function serialize(result, next) {
-  const plain = ({ term, termExact, next: _next, ...rest }, count) => ({
-    ...rest,
-    predicted: _next(count),
-  });
+  const plain = plainCandidate;
   return {
     input: result.input,
     confidence: result.confidence,

@@ -12,20 +12,23 @@
 
 import { Rational, R, toRationals } from './rational.js';
 import { METHODS, reproduces } from './methods.js';
+import { STEP_METHODS, conflictIn, cycleFrom } from './step.js';
 
 /** How strongly a candidate is believed, best first. */
 export const TIERS = ['verified', 'exact', 'projection', 'overfit'];
 
 /**
  * @param {number[]} sequence
- * @param {{holdout?: number, methods?: Function[]}} [options]
+ * @param {{holdout?: number, methods?: Function[], uniform?: boolean}} [options]
+ *   `uniform: true` restricts the search to rules of the form x[i+1] = f(x[i]),
+ *   one f applied the same way at every step.
  */
 export function discover(sequence, options = {}) {
   if (!Array.isArray(sequence) || sequence.length < 2) {
     throw new RangeError('need at least 2 terms');
   }
 
-  const methods = options.methods ?? METHODS;
+  const methods = options.methods ?? (options.uniform ? STEP_METHODS : [...METHODS, ...STEP_METHODS]);
   const seq = toRationals(sequence);
   const holdout = options.holdout ?? Math.min(3, Math.max(1, Math.floor(seq.length / 4)));
 
@@ -84,6 +87,11 @@ function describeCandidate(fit, seq, methods, holdout) {
     cost: fit.cost,
     score: fit.cost + weight(fit.params),
     tier,
+    /** true when the rule is one f applied to each value, the same way every time */
+    uniform: Boolean(fit.uniform),
+    apply: fit.apply ? (x) => fit.apply(Rational.from(x)).toNumber() : null,
+    /** where iterating the rule starts repeating, for uniform rules */
+    cycle: fit.apply ? cycleFrom(fit.apply, seq[0]) : null,
     term: (i) => fit.term(i).toNumber(),
     termExact: (i) => fit.term(i).toString(),
     next: (count = 5) => {
@@ -169,6 +177,42 @@ function readableParams(params) {
     else out[key] = value;
   }
   return out;
+}
+
+/**
+ * The strict search: one rule f, applied to each number the same way every time,
+ * such that f(x[i]) is x[i+1] at every single step.
+ *
+ * Unlike `discover`, this can answer "no" for a reason. If some value in the
+ * sequence is followed by two different values, no such f exists — that is a
+ * fact about the sequence, not a limit of the search, and it is reported as
+ * `impossible` rather than as an empty result.
+ *
+ * @param {number[]} sequence
+ * @param {{holdout?: number}} [options]
+ */
+export function stepRule(sequence, options = {}) {
+  const impossible = conflictIn(sequence);
+  const result = discover(sequence, { ...options, uniform: true });
+  const rule = result.law;
+
+  return {
+    input: [...sequence],
+    rule,
+    candidates: result.candidates,
+    tried: result.tried,
+    confidence: result.confidence,
+    impossible: impossible
+      ? {
+          reason: `${impossible.value} is followed by ${impossible.successors.join(' and by ')}`,
+          ...impossible,
+        }
+      : null,
+    /** where the rule starts repeating itself, iterated from the first term */
+    cycle: rule?.cycle ?? null,
+    apply: rule?.apply ?? null,
+    next: (count = 5) => (rule ? rule.next(count) : []),
+  };
 }
 
 /**

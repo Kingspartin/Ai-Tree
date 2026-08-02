@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { discover, explain } from '../src/discover.js';
+import { METHODS } from '../src/methods.js';
 import { Rational, R, solve, ZERO, ONE } from '../src/rational.js';
 
 const law = (sequence) => discover(sequence).law;
-const found = (sequence) => law(sequence).method;
 const nextOf = (sequence, count = 4) => discover(sequence).next(count);
+// scoped to the index-based library; the uniform rules have their own tests
+const found = (sequence) => discover(sequence, { methods: METHODS }).law.method;
 
 test('rationals stay exact', () => {
   assert.equal(R(1, 3).add(R(1, 6)).toString(), '1/2');

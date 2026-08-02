@@ -6,6 +6,8 @@ both directions:
 - **generate** — every number you feed in gets one fixed pattern that repeats forever
 - **discover** — hand it any sequence and it tries method after method until one
   maps each term to the next
+- **one rule for every step** — the strict mode: a single f with `next = f(current)`,
+  applied to each number the same way every time, and the loop it settles into
 
 ## Generating
 
@@ -176,6 +178,89 @@ ratio of `1/3` reproduces its sequence exactly rather than nearly. Anything that
 overflows exact arithmetic is treated as "this method does not fit" rather than
 returning a wrong answer.
 
+## One rule, every step
+
+`discover` will happily answer with a law that reads the *position* of a term —
+`polynomial(2)` is a formula in `i`, `interleaved(2)` uses a different rule on
+alternating positions. Neither predicts the next number the same way for each
+number.
+
+`stepRule` is the strict mode. It only accepts a single function f such that
+
+```
+x[i+1] = f(x[i])     the same f, at every step, for every number
+```
+
+```js
+import { stepRule } from './src/index.js';
+
+const found = stepRule([4, 8, 3, 7, 2, 6, 1, 5, 9, 4, 8]);
+
+found.rule.describe;  // 'f(x) = x + 4, folded onto a ring of 9'
+found.apply(7);       // 2   — the same answer for 7, wherever 7 appears
+found.next(4);        // [3, 7, 2, 6]
+found.cycle;          // { closes: true, lead: [], cycle: [4,8,3,7,2,6,1,5,9], period: 9 }
+```
+
+This is where the two halves of the repo meet: the pattern the generator makes
+for the number 4 is recovered as the step rule `f(x) = x + 4` on a ring of 9, and
+its doubling orbit as `f(x) = 2 · x` on the same ring.
+
+### The shapes of f
+
+| rule | f | example |
+| --- | --- | --- |
+| `step:add` | `x + d` | `2 4 6 8` |
+| `step:multiply` | `r · x` | `1 2 4 8 16` |
+| `step:affine` | `a·x + b` | `5 17 53 161` |
+| `step:polynomial(k)` | polynomial in x | `2 5 26 677` |
+| `step:ring(m)` | `a·x + b` folded onto a ring of m | `4 8 3 7 2 6 1 5 9` |
+| `step:parity` | `x/2` when even, `a·x + b` when odd | `6 3 10 5 16 8 4 2 1` |
+| `step:digit-sum`, `step:digit-squares`, `step:digital-root`, `step:reverse`, `step:add-digit-sum` | built from the digits of x | `7 49 97 130 10 1` |
+| `step:next-prime` | the next prime after x | `2 3 5 7 11` |
+| `step:table` | written out, value by value | `10 3 7 10 3 7` |
+
+The table is the fallback that always applies when values recur, but it
+*memorises* rather than compresses, so it is charged for every number it holds. A
+ring rule holding three numbers beats a table holding eighteen — and when nothing
+compresses the loop, the table is the honest answer.
+
+### It repeats, and that is guaranteed
+
+Once f is fixed, iterating it from any number must eventually revisit a value,
+and from that point the sequence is a loop forever. `cycle` reports exactly
+where:
+
+```
+$ node cli.js --step 6,3,10,5,16,8,4,2,1
+  rule      f(x) = x/2 when even, 3x + 1 when odd
+  applied   to every number, the same way, at every step
+  method    step:parity   (verified)
+  next      4 2 1 4 2 1
+  repeats   6 3 10 5 16 8 → then 4 2 1 ↺   (period 3)
+```
+
+Values that grow forever never come back around (`f(x) = x + 2` has no loop), and
+that is reported rather than hidden. Folding onto a ring is what makes a repeat
+certain: a ring has finitely many places to stand.
+
+### When there cannot be one
+
+Some sequences admit no such rule, and this is provable rather than a matter of
+searching harder. If a value is ever followed by two different values, then the
+next term is not decided by the current one, and no f can exist:
+
+```
+$ node cli.js --step 1,1,2,3,5,8,13
+  no rule of the form f(x) — and there cannot be one
+  because   1 is followed by 1 at index 0
+            and by 2 at index 1
+            so the next term is not decided by the current one alone
+```
+
+Fibonacci is exactly this case: it needs the previous **two** terms, so
+`discover` finds it as `recurrence(2)` while `stepRule` correctly refuses.
+
 ## Command line
 
 ```
@@ -188,6 +273,10 @@ node cli.js 4 --json
 node cli.js --fit 1,1,2,3,5,8       # find the law behind a sequence
 node cli.js --fit "3 1 4 3 1 4" --all   # and every other method that fitted
 node cli.js --fit 2,9,4,11,6,13 --next 10
+
+node cli.js --step 4,8,3,7,2,6,1,5,9    # one rule f, applied at every step
+node cli.js --step 6,3,10,5,16,8,4,2,1
+node cli.js --step 1,1,2,3,5,8          # says why there cannot be one
 ```
 
 ```
@@ -236,8 +325,9 @@ npm run web     # then open http://localhost:8080
 A mobile-first page. Type a number and watch its pattern draw itself as a closed
 figure on the ring, alongside the orbit and the tree; change the ring size or the
 factor to reshape every pattern at once. At the bottom, paste any sequence into
-**find a law** and the discovered rule appears with its predicted terms drawn in
-outline.
+**find a law**: the discovered rule appears with its predicted terms drawn in
+outline, followed by the strict verdict — the single f that works at every step
+and the loop it repeats into, or the reason no such f can exist.
 
 ## Layout
 
@@ -247,6 +337,7 @@ src/tree.js       deterministic branching tree
 src/model.js      the generative model: pattern + orbit + tree + signature
 src/rational.js   exact fractions and linear solving
 src/methods.js    the method library — one function per hypothesis
+src/step.js       uniform rules: one f applied at every step, and its cycle
 src/discover.js   the search engine: fit, hold out, rank
 src/format.js     text rendering
 cli.js            command line
@@ -273,3 +364,9 @@ predicts the terms that follow, that sequences generated from random parameters
 are recovered and extrapolated correctly, that every candidate law reproduces
 every term it was fitted to, that the ranking never puts an overfit above a real
 fit, and that noise is reported as noise.
+
+For the strict mode: that the found rule really does map each term to the next at
+every position, that the same number always gets the same successor wherever it
+appears, that iterating the rule settles into the loop it claims, that every
+pattern the generator produces comes back as a ring rule with the right period,
+and that a sequence needing two previous terms is refused with the reason.

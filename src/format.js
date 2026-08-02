@@ -68,6 +68,19 @@ export function formatDiscovery(result, { next = 6, all = false } = {}) {
     lines.push('  note      as many parameters as terms — this fits any sequence at all');
   }
 
+  if (law.uniform) {
+    lines.push('  uniform   yes — the same f applied to each number');
+  } else {
+    const uniform = result.candidates.find(
+      (candidate) => candidate.uniform && !candidate.overfit && !candidate.projection,
+    );
+    lines.push(
+      uniform
+        ? `  uniform   this law reads the index, but ${uniform.describe} works at every step too`
+        : '  uniform   no — this law reads the position, not just the previous number',
+    );
+  }
+
   const others = result.candidates.slice(1);
   if (all && others.length) {
     lines.push('', `  ${others.length} other fit${others.length === 1 ? '' : 's'}`);
@@ -85,6 +98,58 @@ export function formatDiscovery(result, { next = 6, all = false } = {}) {
 function badge(law) {
   if (!law.holdout.tested) return '';
   return `  (${law.holdout.passed}/${law.holdout.tested} withheld terms predicted)`;
+}
+
+/**
+ * Report for a uniform step rule: one f, applied to each number the same way
+ * every time, plus the loop that iterating it settles into.
+ * @param {import('./discover.js').stepRule} result
+ */
+export function formatStep(result, { next = 6, all = false } = {}) {
+  const lines = [`sequence  ${result.input.join(' ')}`, ''];
+
+  if (!result.rule) {
+    if (result.impossible) {
+      const { value, successors, at } = result.impossible;
+      lines.push('  no rule of the form f(x) — and there cannot be one');
+      lines.push(`  because   ${value} is followed by ${successors[0]} at index ${at[0]}`);
+      lines.push(`            and by ${successors[1]} at index ${at[1]}`);
+      lines.push('            so the next term is not decided by the current one alone');
+    } else {
+      lines.push(`  no rule of the form f(x) found — ${result.tried} shapes tried`);
+    }
+    return lines.join('\n');
+  }
+
+  const rule = result.rule;
+  lines.push(`  rule      ${rule.describe}`);
+  lines.push(`  applied   to every number, the same way, at every step`);
+  lines.push(`  method    ${rule.method}   (${result.confidence})`);
+  lines.push(`  next      ${result.next(next).join(' ')}`);
+
+  const cycle = result.cycle;
+  if (cycle?.closes) {
+    const lead = cycle.lead.length ? `${cycle.lead.join(' ')} → then ` : '';
+    lines.push(`  repeats   ${lead}${cycle.cycle.join(' ')} ↺   (period ${cycle.period})`);
+  } else if (cycle) {
+    lines.push(`  repeats   never — ${cycle.reason}`);
+  }
+  if (rule.projection) {
+    lines.push(`  note      predicts the ${rule.projection}, not the raw value`);
+  }
+
+  const others = result.candidates.slice(1);
+  if (all && others.length) {
+    lines.push('', `  ${others.length} other rule${others.length === 1 ? '' : 's'}`);
+    for (const candidate of others) {
+      lines.push(
+        `    ${candidate.method.padEnd(22)} ${String(candidate.score).padStart(6)}  ${candidate.describe}`,
+      );
+    }
+  } else if (others.length) {
+    lines.push('', `  also fits: ${others.map((c) => c.method).join(', ')}`);
+  }
+  return lines.join('\n');
 }
 
 /** Side-by-side table of several models. */
