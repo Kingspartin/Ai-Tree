@@ -152,6 +152,61 @@ export function formatStep(result, { next = 6, all = false } = {}) {
   return lines.join('\n');
 }
 
+/**
+ * The graph of a rule: each component is one cycle with trees feeding into it.
+ * @param {import('./graph.js').functionalGraph} graph
+ */
+export function formatGraph(graph, { title = null } = {}) {
+  const lines = [];
+  if (title) lines.push(`graph     ${title}`, '');
+
+  const feeders = graph.order.filter((value) => !graph.nodes.get(value).onCycle).length;
+  lines.push(
+    `  ${graph.order.length} number${graph.order.length === 1 ? '' : 's'}` +
+      ` · ${graph.cycles.length} cycle${graph.cycles.length === 1 ? '' : 's'}` +
+      (feeders ? ` · ${feeders} feeding in` : ' · nothing feeding in'),
+  );
+
+  for (const component of graph.components) {
+    lines.push('');
+    const cycle = graph.cycles.find((c) => c.id === component.cycle);
+    if (!cycle) {
+      lines.push(`  no cycle  ${component.values.join(' ')}`);
+      lines.push('            these run off the edge of the drawn graph');
+      continue;
+    }
+
+    lines.push(`  cycle     ${cycle.values.join(' → ')} ↺   (period ${cycle.period})`);
+    for (const value of cycle.values) {
+      const tree = feederLines(graph, value);
+      if (tree.length) lines.push(...tree.map((line) => `            ${line}`));
+    }
+  }
+  return lines.join('\n');
+}
+
+/** The numbers that fall into one cycle node, as an indented tree. */
+function feederLines(graph, value) {
+  const roots = (graph.children.get(value) ?? []).filter(
+    (child) => !graph.nodes.get(child).onCycle,
+  );
+  if (roots.length === 0) return [];
+
+  const lines = [`${value} ←`];
+  const walk = (current, prefix) => {
+    const children = (graph.children.get(current) ?? []).filter(
+      (child) => !graph.nodes.get(child).onCycle,
+    );
+    children.forEach((child, index) => {
+      const last = index === children.length - 1;
+      lines.push(`${prefix}${last ? '└─ ' : '├─ '}${child}`);
+      walk(child, `${prefix}${last ? '   ' : '│  '}`);
+    });
+  };
+  walk(value, '  ');
+  return lines;
+}
+
 /** Side-by-side table of several models. */
 export function formatTable(list) {
   const rows = list.map((m) => [String(m.seed), m.pattern.join(' '), String(m.period)]);

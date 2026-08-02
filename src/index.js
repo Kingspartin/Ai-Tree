@@ -5,4 +5,5 @@ export { formatModel, formatTree, formatTable, formatLine, formatDiscovery, form
 export { discover, stepRule, explain, fold, TIERS } from './discover.js';
 export { METHODS, reproduces } from './methods.js';
 export { STEP_FAMILIES, STEP_METHODS, conflictIn, cycleFrom } from './step.js';
+export { functionalGraph, graphOf, reachableFrom, layout, toDot, toCoordinates } from './graph.js';
 export { Rational, R, solve } from './rational.js';

@@ -1,7 +1,51 @@
 # Ai-Tree
 
-Visualized mobile ai app — built on a **number modeling system** that works in
-both directions:
+Visualized mobile ai app — a **number modeling system** that works in both
+directions: give it a number and it makes a repeating pattern, or give it a
+sequence and it works out the rule.
+
+## How to use it
+
+**On a phone or without installing anything**, open `web/standalone.html`. It is
+one self-contained file: no server, no internet, no build step. Open it, and:
+
+- **Type a number** in the first box. You get its pattern, drawn as a shape on a
+  ring. 4 gives `4 8 3 7 2 6 1 5 9`, then it starts over. It never changes.
+- **Paste a sequence** into *find a law* at the bottom — `2, 4, 6, 8` or
+  `1, 1, 2, 3, 5, 8` or anything at all. It tries rule after rule until one
+  predicts the next number, shows you what it found, and says how sure it is.
+  The numbers drawn in outline are its predictions.
+- **Tap the little words** (`fibonacci`, `primes`, `collatz`, `noise`) to load
+  examples.
+
+**From a terminal**, if you have Node installed:
+
+```
+node cli.js 4                      # the pattern for a number
+node cli.js --fit 2,4,6,8          # find the rule behind a sequence
+node cli.js --step 6,3,10,5,16,8   # the rule as "next = f(current)"
+node cli.js --graph 2,4,8,6,2      # the same rule drawn as a graph
+node cli.js --help                 # everything else
+```
+
+**From your own code**: `import { model, discover, stepRule } from './src/index.js'`.
+
+### What the answers mean
+
+When it finds a rule it tells you how much to trust it, in one word:
+
+| word | what it means |
+| --- | --- |
+| `verified` | it hid some of your numbers, guessed them right, and then showed you |
+| `exact` | it fits every number you gave, but there were too few to test it properly |
+| `projection` | the numbers themselves follow no rule — only something about them does, like odd/even |
+| `overfit` | it fits, but so would any rule; this is the polite way of saying *no pattern here* |
+
+Only `verified` is a real finding. `overfit` means it found nothing.
+
+---
+
+The three things it does:
 
 - **generate** — every number you feed in gets one fixed pattern that repeats forever
 - **discover** — hand it any sequence and it tries method after method until one
@@ -261,6 +305,55 @@ $ node cli.js --step 1,1,2,3,5,8,13
 Fibonacci is exactly this case: it needs the previous **two** terms, so
 `discover` finds it as `recurrence(2)` while `stepRule` correctly refuses.
 
+## As a graph
+
+A rule where every number has exactly one successor **is** a directed graph with
+one arrow out of each node. Graphs shaped like that can only do one thing:
+
+```
+every component is exactly one cycle, with trees feeding into it
+```
+
+So the pattern is the cycle, and the numbers that fall into it are the trees
+hanging off it. That is not a design decision, it is the only thing a finite set
+of numbers with one arrow each can do.
+
+```
+$ node cli.js --graph 2,4,8,6,2,4
+graph     f(x) = 2 · x, folded onto a ring of 10
+
+  10 numbers · 2 cycles · 5 feeding in
+
+  cycle     2 → 4 → 8 → 6 ↺   (period 4)
+            2 ←
+              └─ 1
+            4 ←
+              └─ 7
+            8 ←
+              └─ 9
+            6 ←
+              └─ 3
+
+  cycle     10 ↺   (period 1)
+            10 ←
+              └─ 5
+```
+
+```js
+import { stepRule, graphOf, layout, toDot } from './src/index.js';
+
+const graph = graphOf(stepRule([2, 4, 8, 6, 2, 4]));
+
+graph.cycles;      // [{ values: [2,4,8,6], period: 4 }, { values: [10], period: 1 }]
+graph.nodes.get(1) // { value: 1, next: 2, onCycle: false, depth: 1, cycle: 0 }
+layout(graph);     // every number with an x and y in a 0..1 box, ready to draw
+toDot(graph);      // the same graph for graphviz
+```
+
+`layout` places each cycle on a circle and fans the numbers feeding into it
+outwards by how many steps away they are — which is exactly what the visualizer
+draws, and what `--coords` prints if you would rather draw it yourself.
+
 ## Command line
 
 ```
@@ -277,6 +370,10 @@ node cli.js --fit 2,9,4,11,6,13 --next 10
 node cli.js --step 4,8,3,7,2,6,1,5,9    # one rule f, applied at every step
 node cli.js --step 6,3,10,5,16,8,4,2,1
 node cli.js --step 1,1,2,3,5,8          # says why there cannot be one
+
+node cli.js --graph 2,4,8,6,2           # the rule as a graph of numbers
+node cli.js --graph 4,8,3,7,2,6 --dot   # …as graphviz DOT
+node cli.js --graph 4,8,3,7,2,6 --coords  # …as x/y coordinates
 ```
 
 ```
@@ -318,9 +415,16 @@ seed 4   root 4   mod 9   factor 2
 
 ## Visualizer
 
+Two ways to open it:
+
 ```
-npm run web     # then open http://localhost:8080
+open web/standalone.html    # one file, no server, works offline and on a phone
+npm run web                 # the dev version, then open http://localhost:8080
 ```
+
+`web/standalone.html` is built from `web/index.html` by `npm run bundle`, which
+inlines every module into the page. Edit `web/index.html`; the standalone file is
+generated.
 
 A mobile-first page. Type a number and watch its pattern draw itself as a closed
 figure on the ring, alongside the orbit and the tree; change the ring size or the
@@ -339,9 +443,12 @@ src/rational.js   exact fractions and linear solving
 src/methods.js    the method library — one function per hypothesis
 src/step.js       uniform rules: one f applied at every step, and its cycle
 src/discover.js   the search engine: fit, hold out, rank
+src/graph.js      the rule as a graph, plus coordinates and DOT
 src/format.js     text rendering
 cli.js            command line
-web/index.html    visualizer
+web/index.html    visualizer — the source of truth for the page
+web/standalone.html  generated: the whole thing in one file, no server
+scripts/bundle.js    builds it
 test/             tests
 ```
 
@@ -370,3 +477,8 @@ every position, that the same number always gets the same successor wherever it
 appears, that iterating the rule settles into the loop it claims, that every
 pattern the generator produces comes back as a ring rule with the right period,
 and that a sequence needing two previous terms is refused with the reason.
+
+For the graph: that every node has exactly one arrow out, that every component is
+one cycle with trees feeding in, that following the arrows from anywhere lands on
+a cycle, that distances to the cycle are right, and that coordinates stay inside
+their box without two numbers landing on the same spot.

@@ -10,7 +10,8 @@
 
 import { model, families } from './src/model.js';
 import { discover, stepRule } from './src/discover.js';
-import { formatModel, formatTable, formatDiscovery, formatStep } from './src/format.js';
+import { graphOf, layout, toDot } from './src/graph.js';
+import { formatModel, formatTable, formatDiscovery, formatStep, formatGraph } from './src/format.js';
 
 const USAGE = `ai-tree — number pattern modeling
 
@@ -18,6 +19,7 @@ usage
   node cli.js <number...> [options]         model each number
   node cli.js --fit <sequence> [options]    find the law behind a sequence
   node cli.js --step <sequence> [options]   find one rule f with next = f(current)
+  node cli.js --graph <sequence> [options]  draw that rule as a graph of numbers
 
 options
   --mod <n>        ring size, default 9 (9 gives digital roots)
@@ -29,6 +31,10 @@ options
   --fit <seq>      discover the rule mapping each term of a sequence to the next
   --step <seq>     stricter: one rule f applied to every number the same way,
                    reported with the loop that iterating it settles into
+  --graph <seq>    the same rule as a graph: every cycle, and the numbers that
+                   feed into it
+  --dot            with --graph, emit graphviz DOT instead
+  --coords         with --graph, emit each number's x/y coordinates as JSON
   --next <n>       how many terms to predict, default 6
   --all            with --fit, list every method that fitted
   --json           emit JSON
@@ -42,7 +48,9 @@ examples
   node cli.js --fit 1,1,2,3,5,8
   node cli.js --fit "3 1 4 3 1 4" --all
   node cli.js --step 4,8,3,7,2,6,1,5,9
-  node cli.js --step 6,3,10,5,16,8,4,2,1`;
+  node cli.js --step 6,3,10,5,16,8,4,2,1
+  node cli.js --graph 2,4,8,6,2
+  node cli.js --graph 4,8,3,7,2,6,1,5,9 --dot`;
 
 function parseArgs(argv) {
   const options = {};
@@ -53,6 +61,9 @@ function parseArgs(argv) {
   let repeats = 2;
   let sequence = null;
   let strict = false;
+  let graph = false;
+  let dot = false;
+  let coords = false;
   let next = 6;
   let all = false;
 
@@ -90,6 +101,17 @@ function parseArgs(argv) {
         sequence = readSequence(argv[++i]);
         strict = true;
         break;
+      case '--graph':
+        sequence = readSequence(argv[++i]);
+        strict = true;
+        graph = true;
+        break;
+      case '--dot':
+        dot = true;
+        break;
+      case '--coords':
+        coords = true;
+        break;
       case '--next':
         next = readNumber(argv[++i], '--next');
         break;
@@ -102,7 +124,10 @@ function parseArgs(argv) {
       }
     }
   }
-  return { seeds, options, table, json, range, repeats, sequence, strict, next, all, help: false };
+  return {
+    seeds, options, table, json, range, repeats,
+    sequence, strict, graph, dot, coords, next, all, help: false,
+  };
 }
 
 function readNumber(raw, name) {
@@ -137,6 +162,25 @@ function main(argv) {
 
   if (args.help || (!args.seeds.length && !args.range && !args.sequence)) {
     console.log(USAGE);
+    return 0;
+  }
+
+  if (args.sequence && args.graph) {
+    const found = stepRule(args.sequence);
+    if (!found.rule) {
+      console.log(formatStep(found, { next: args.next }));
+      return 1;
+    }
+    const built = graphOf(found);
+    if (args.dot) {
+      console.log(toDot(built));
+      return 0;
+    }
+    if (args.coords || args.json) {
+      console.log(JSON.stringify(layout(built), null, 2));
+      return 0;
+    }
+    console.log(formatGraph(built, { title: found.rule.describe }));
     return 0;
   }
 

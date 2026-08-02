@@ -16,11 +16,13 @@
   "scripts": {
     "test": "node --test",
     "start": "node cli.js 1 4 5",
-    "web": "node scripts/serve.js"
+    "web": "node scripts/serve.js",
+    "bundle": "node scripts/bundle.js"
   },
   "files": [
     "src",
-    "cli.js"
+    "cli.js",
+    "web/standalone.html"
   ],
   "license": "MIT"
 }

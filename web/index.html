@@ -21,6 +21,14 @@
       --ink: #16202b; --muted: #5c6874; --accent: #12796b; --accent-soft: #12796b1f;
     }
   }
+  :root[data-theme="light"] {
+    --bg: #f6f8fa; --panel: #ffffff; --line: #d9e0e8;
+    --ink: #16202b; --muted: #5c6874; --accent: #12796b; --accent-soft: #12796b1f;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --panel: #151b23; --line: #232c38;
+    --ink: #e6edf3; --muted: #8b96a5; --accent: #4cc2b0; --accent-soft: #4cc2b033;
+  }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -46,7 +54,7 @@
   .controls > div { min-width: 0; }
   .presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
   .presets button {
-    flex: 1 1 auto; min-width: 3rem; min-height: 2.6rem; padding: 0.4rem 0.7rem; font: inherit;
+    flex: 1 1 auto; min-width: 3rem; min-height: 2.75rem; padding: 0.4rem 0.7rem; font: inherit;
     color: var(--ink); background: var(--bg); border: 1px solid var(--line);
     border-radius: 0.6rem; cursor: pointer;
   }
@@ -74,6 +82,10 @@
   }
   .node.repeat b { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
   footer { color: var(--muted); font-size: 0.8rem; text-align: center; }
+  .intro { display: grid; gap: 0.6rem; }
+  .intro p { margin: 0; max-width: 34em; }
+  .intro b { color: var(--ink); }
+  .intro i { font-style: normal; color: var(--accent); }
   .law { margin-top: 0.9rem; display: grid; gap: 0.5rem; }
   .law .rule { font-size: 1.05rem; font-weight: 600; }
   .law .rule.weak { font-weight: 400; color: var(--muted); }
@@ -95,6 +107,13 @@
 <body>
 <main>
   <h1>ai-tree <span>· one repeating pattern per number</span></h1>
+
+  <section class="intro">
+    <p><b>Type a number.</b> It gets one pattern, and that pattern repeats forever.
+       4 gives 4 8 3 7 2 6 1 5 9, then starts again.</p>
+    <p><b>Or paste a sequence</b> into <i>find a law</i> at the bottom. It tries rule
+       after rule until one predicts the next number, then tells you how sure it is.</p>
+  </section>
 
   <section>
     <div class="controls">
@@ -143,7 +162,7 @@
   <section>
     <h2>find a law</h2>
     <label for="sequence">any sequence</label>
-    <input id="sequence" type="text" value="1, 1, 2, 3, 5, 8" inputmode="numeric"
+    <input id="sequence" type="text" value="4, 8, 3, 7, 2, 6, 1, 5, 9" inputmode="numeric"
            autocomplete="off" spellcheck="false" placeholder="1, 1, 2, 3, 5, 8">
     <div class="presets" id="sequence-presets"></div>
     <div id="law"></div>
@@ -153,7 +172,7 @@
 </main>
 
 <script type="module">
-import { model, discover, stepRule } from '../src/index.js';
+import { model, discover, stepRule, graphOf, layout } from '../src/index.js';
 
 const fields = {
   seed: document.getElementById('seed'),
@@ -428,7 +447,101 @@ function uniformNote(terms) {
   } else if (cycle) {
     wrap.append(line(`never repeats — ${cycle.reason}`, 'also'));
   }
+
+  const picture = graphPicture(strict);
+  if (picture) {
+    wrap.append(picture);
+    wrap.append(line('every number has one arrow out — follow them and you land in the loop', 'also'));
+  }
   return wrap;
+}
+
+/**
+ * The rule drawn as a graph: one arrow out of every number, the loop drawn
+ * solid, the numbers that fall into it feeding in from outside.
+ */
+function graphPicture(strict) {
+  let built;
+  try {
+    built = graphOf(strict, { limit: 60 });
+  } catch {
+    return null;
+  }
+  if (!built || built.order.length < 2 || built.order.length > 60) return null;
+
+  const placed = layout(built);
+  const size = 240;
+  const pad = 18;
+  const span = size - pad * 2;
+  const at = (value) => [pad + value * span, pad];
+
+  const svg = document.createElementNS(SVG, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.setAttribute('role', 'img');
+  svg.setAttribute(
+    'aria-label',
+    `${built.order.length} numbers, ${built.cycles.length} loop${built.cycles.length === 1 ? '' : 's'}`,
+  );
+
+  const marker = document.createElementNS(SVG, 'marker');
+  marker.setAttribute('id', 'arrow');
+  marker.setAttribute('viewBox', '0 0 6 6');
+  marker.setAttribute('refX', '5');
+  marker.setAttribute('refY', '3');
+  marker.setAttribute('markerWidth', '5');
+  marker.setAttribute('markerHeight', '5');
+  marker.setAttribute('orient', 'auto-start-reverse');
+  const head = document.createElementNS(SVG, 'path');
+  head.setAttribute('d', 'M0 0 L6 3 L0 6 z');
+  head.setAttribute('fill', 'var(--muted)');
+  marker.append(head);
+  const defs = document.createElementNS(SVG, 'defs');
+  defs.append(marker);
+  svg.append(defs);
+
+  const radius = placed.nodes.length > 24 ? 5 : 8;
+  for (const edge of placed.edges) {
+    const [x1, y1] = [pad + edge.x1 * span, pad + edge.y1 * span];
+    const [x2, y2] = [pad + edge.x2 * span, pad + edge.y2 * span];
+    const length = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const trim = radius + 3;
+    const line = document.createElementNS(SVG, 'line');
+    line.setAttribute('x1', x1 + ((x2 - x1) / length) * trim);
+    line.setAttribute('y1', y1 + ((y2 - y1) / length) * trim);
+    line.setAttribute('x2', x2 - ((x2 - x1) / length) * trim);
+    line.setAttribute('y2', y2 - ((y2 - y1) / length) * trim);
+    line.setAttribute('stroke', edge.onCycle ? 'var(--accent)' : 'var(--line)');
+    line.setAttribute('stroke-width', edge.onCycle ? '1.6' : '1');
+    line.setAttribute('marker-end', 'url(#arrow)');
+    svg.append(line);
+  }
+
+  for (const node of placed.nodes) {
+    const [x, y] = [pad + node.x * span, pad + node.y * span];
+    const dot = document.createElementNS(SVG, 'circle');
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', y);
+    dot.setAttribute('r', radius);
+    dot.setAttribute('fill', node.onCycle ? 'var(--accent-soft)' : 'var(--bg)');
+    dot.setAttribute('stroke', node.onCycle ? 'var(--accent)' : 'var(--line)');
+    svg.append(dot);
+
+    if (placed.nodes.length <= 30) {
+      const label = document.createElementNS(SVG, 'text');
+      label.setAttribute('x', x);
+      label.setAttribute('y', y + 3.5);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('font-size', '9');
+      label.setAttribute('fill', node.onCycle ? 'var(--accent)' : 'var(--muted)');
+      label.textContent = node.value;
+      svg.append(label);
+    }
+  }
+
+  const figure = document.createElement('figure');
+  figure.style.margin = '0.4rem 0 0';
+  figure.append(svg);
+  return figure;
 }
 
 function line(text, className) {
