@@ -46,7 +46,7 @@ def _scale(iset, ctx, k, s):
     walk. Without that factor every set occupying half the candidates looks
     'more ordered' than random by the same amount.
     """
-    a = np.flatnonzero(ctx.admissible)
+    a = ctx.admissible_idx
     n_cand = float((np.gcd(a, k) == 1).sum())
     rho = min(s.size / n_cand, 0.999) if n_cand else 0.0
     return float(np.sqrt(s.size * (1.0 - rho)))

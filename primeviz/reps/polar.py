@@ -12,7 +12,9 @@ import numpy as np
 
 from ..registry import Representation
 from ..stats import dispersion
-from ..theme import SET_COLORS, bare
+from matplotlib.colors import LinearSegmentedColormap
+
+from ..theme import SET_COLORS, SURFACE, bare
 
 TWO_PI = 2.0 * np.pi
 ARMS = (6, 44, 100, 710)  # 6, 44, 710 are rational approximations to 2π; 100 is a control
@@ -26,10 +28,18 @@ def polar_render(iset, sf, ctx):
         sel = v <= cap
         r = v[sel].astype(float)
         t = th[sel]
-        ax.scatter(
-            r * np.cos(t), r * np.sin(t), s=0.9, c=SET_COLORS[iset.key],
-            linewidths=0, alpha=0.8,
-        )
+        px, py = r * np.cos(t), r * np.sin(t)
+        if px.size > 200_000:
+            H, _, _ = np.histogram2d(px, py, bins=800,
+                                     range=[[-cap, cap], [-cap, cap]])
+            ax.imshow(np.sqrt(H.T), origin="lower",
+                      extent=[-cap, cap, -cap, cap],
+                      cmap=LinearSegmentedColormap.from_list(
+                          "p", [SURFACE, SET_COLORS[iset.key]]),
+                      interpolation="nearest")
+        else:
+            ax.scatter(px, py, s=0.9, c=SET_COLORS[iset.key], linewidths=0,
+                       alpha=0.8)
         ax.set_aspect("equal")
         ax.set_title(f"r=n, θ=n rad, n ≤ {cap:,}", pad=6)
         bare(ax)
@@ -41,7 +51,7 @@ def _bin(v, nb):
 
 def polar_stats(iset, ctx):
     n_all = ctx.integers
-    adm = np.flatnonzero(ctx.admissible)
+    adm = ctx.admissible_idx
     out = {}
     for nb in ARMS:
         cells = np.bincount(_bin(n_all, nb), minlength=nb).astype(float)

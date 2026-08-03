@@ -27,6 +27,8 @@ def main() -> None:
     ap.add_argument("--umap", action="store_true", help="opt in; ~1 min per set")
     ap.add_argument("--only", nargs="*", default=None)
     ap.add_argument("--out", default="out")
+    ap.add_argument("--rough-bound", type=int, default=None,
+                    help="sieve bound for the deterministic rough null (default 47)")
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--list", action="store_true")
     a = ap.parse_args()
@@ -35,6 +37,11 @@ def main() -> None:
         for r in selected(iteration_max=99):
             print(f"  [iter {r.iteration}] {r.key:22s} {r.title}")
         return
+
+    if a.rough_bound:
+        from primeviz import numbers
+
+        numbers.ROUGH_BOUND = a.rough_bound
 
     if a.quick:
         a.N, a.reps, a.umap = min(a.N, 20_000), 6, False

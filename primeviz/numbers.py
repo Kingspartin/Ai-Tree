@@ -127,7 +127,8 @@ def make_sieved(
 ROUGH_BOUND = 47
 
 
-def rough_candidates(N: int, bound: int = ROUGH_BOUND) -> np.ndarray:
+def rough_candidates(N: int, bound: int | None = None) -> np.ndarray:
+    bound = ROUGH_BOUND if bound is None else bound
     """Mask of integers with no prime factor <= bound (plus those primes)."""
     m = np.ones(N + 1, dtype=bool)
     m[:2] = False
@@ -142,7 +143,7 @@ def make_rough(
     N: int,
     rng: np.random.Generator | None,
     target: int,
-    bound: int = ROUGH_BOUND,
+    bound: int | None = None,
     thin: bool = True,
 ) -> IntegerSet:
     """Integers with no prime factor <= 47, thinned to the primes' density.
@@ -162,6 +163,7 @@ def make_rough(
     alongside: the unthinned set has the same sieve structure with nothing
     imposed on its counts.
     """
+    bound = ROUGH_BOUND if bound is None else bound
     cand = rough_candidates(N, bound)
     idx = np.flatnonzero(cand)
     if not thin:
@@ -189,7 +191,7 @@ def make_rough(
     return IntegerSet("rough", f"det: no factor <= {bound}", "null", N, m)
 
 
-def make_rough_unthinned(N, rng, target, bound: int = ROUGH_BOUND):
+def make_rough_unthinned(N, rng, target, bound: int | None = None):
     """The default rough null: sieve structure, no thinning rule.
 
     Thinning was tried first, to match the primes' density exactly, and it

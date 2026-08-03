@@ -30,25 +30,66 @@ class Context:
         """
         m = int((np.sqrt(self.N) - 1) // 2)
         M = (2 * m + 1) ** 2
-        dirs = [(1, 0), (0, 1), (-1, 0), (0, -1)]
-        steps: list[tuple[int, int]] = []
-        seg, i = 1, 0
-        while len(steps) < M - 1:
-            for _ in range(2):
-                steps.extend([dirs[i % 4]] * seg)
-                i += 1
-            seg += 1
-        arr = np.array(steps[: M - 1], dtype=np.int32)
-        xy = np.zeros((M, 2), dtype=np.int32)
-        xy[1:] = np.cumsum(arr, axis=0)
-        return xy[:, 0], xy[:, 1], M
+        # Vectorised: run lengths are 1,1,2,2,3,3,... and directions cycle
+        # R,U,L,D. Building this as a Python list costs ~10 GB at N=10^7.
+        # segment lengths 1,1,2,2,...,s,s cover s(s+1) steps, and M-1 < (2m+2)(2m+3)
+        s_max = 2 * m + 2
+        lens = np.repeat(np.arange(1, s_max + 1, dtype=np.int64), 2)
+        dirs = np.tile(np.array([0, 1, 2, 3], dtype=np.int8), len(lens) // 4 + 1)
+        dirs = dirs[: len(lens)]
+        dx = np.repeat(np.array([1, 0, -1, 0], dtype=np.int32)[dirs], lens)[: M - 1]
+        dy = np.repeat(np.array([0, 1, 0, -1], dtype=np.int32)[dirs], lens)[: M - 1]
+        assert dx.size == M - 1, (dx.size, M - 1)
+        x = np.zeros(M, dtype=np.int32)
+        y = np.zeros(M, dtype=np.int32)
+        np.cumsum(dx, out=x[1:])
+        np.cumsum(dy, out=y[1:])
+        return x, y, M
+
+    # --- cached candidate-pool quantities -------------------------------------
+    # These depend only on the integers, not on the set being scored, and the
+    # scorer evaluates every statistic ~25 times per representation. Recomputing
+    # the mod-k histograms of all integers costs 8.7 s per evaluation at 10^7.
+
+    @cached_property
+    def _mod_cells(self) -> dict:
+        return {}
+
+    def mod_counts(self, k: int) -> tuple[np.ndarray, np.ndarray]:
+        """(all integers, admissible integers) counted by residue mod k."""
+        if k not in self._mod_cells:
+            self._mod_cells[k] = (
+                np.bincount(self.integers % k, minlength=k).astype(float),
+                np.bincount(np.flatnonzero(self.admissible) % k, minlength=k).astype(
+                    float
+                ),
+            )
+        return self._mod_cells[k]
+
+    @cached_property
+    def admissible_idx(self) -> np.ndarray:
+        return np.flatnonzero(self.admissible)
+
+    @cached_property
+    def ulam_admissible(self) -> np.ndarray:
+        return np.flatnonzero(self.admissible[: self.ulam[2] + 1])
+
+    @cached_property
+    def prime_mask(self) -> np.ndarray:
+        from .numbers import sieve_mask
+
+        return sieve_mask(self.N)
+
+    @cached_property
+    def cache(self) -> dict:
+        """Scratch space for representations to memoise set-independent work."""
+        return {}
 
     @cached_property
     def sacks(self) -> tuple[np.ndarray, np.ndarray]:
-        n = np.arange(self.N + 1, dtype=float)
-        r = np.sqrt(n)
+        r = np.sqrt(np.arange(self.N + 1, dtype=np.float64))
         th = 2.0 * np.pi * r
-        return r * np.cos(th), r * np.sin(th)
+        return (r * np.cos(th)).astype(np.float32), (r * np.sin(th)).astype(np.float32)
 
     @cached_property
     def integers(self) -> np.ndarray:

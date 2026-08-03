@@ -29,8 +29,7 @@ def _gcd_reduced(k: int) -> np.ndarray:
 
 
 def _ratio_row(iset, ctx, k):
-    n_all = ctx.integers
-    cells = np.bincount(n_all % k, minlength=k).astype(float)
+    cells, _ = ctx.mod_counts(k)
     obs = np.bincount(iset.values % k, minlength=k).astype(float)
     exp = cells * (obs.sum() / cells.sum())
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -71,13 +70,10 @@ def modgrid_render(iset, sf, ctx):
 
 
 def modgrid_stats(iset, ctx):
-    n_all = ctx.integers
-    adm = np.flatnonzero(ctx.admissible)
     red_adm, red_all, alld = [], [], []
     per_k = {}
     for k in range(3, K_MAX + 1):
-        cells = np.bincount(n_all % k, minlength=k).astype(float)
-        cells_adm = np.bincount(adm % k, minlength=k).astype(float)
+        cells, cells_adm = ctx.mod_counts(k)
         obs = np.bincount(iset.values % k, minlength=k).astype(float)
         alld.append(dispersion(obs, cells))
         m = _gcd_reduced(k)

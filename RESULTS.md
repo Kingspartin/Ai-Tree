@@ -176,3 +176,104 @@ members avoid small residues, and their density is smooth — so their agreement
 was close to guaranteed and never corroborative. This run tested them against
 one null precisely because they are one claim; and as one claim, it is now
 accounted for.
+
+---
+
+# Round 3: N = 10⁷, primes vs rough ≤ 199
+
+12 representations, 9m22s, peak RSS well under the 15 GB available. N = 10⁷ was
+feasible; the engineering it needed is listed at the end.
+
+## The prediction was wrong as written, and right underneath
+
+I pre-registered "nothing separates" across all eleven representations. **Six of
+twelve read SURVIVES at bound 199.** As a literal prediction that is a miss.
+
+The pre-registered decider was the bound sweep, and it is unambiguous:
+
+| set | count | density | mod_grid | fluct_sL | ulam_diag | crt | gap_lag1 | polar710 | sacks | pair_disp |
+|---|---|---|---|---|---|---|---|---|---|---|
+| rough ≤199 | 1,044,289 | 0.1044 | 0.012 | 0.086 | 11.871 | 0.108 | −0.084 | 0.813 | 1.180 | 285.5 |
+| rough ≤401 | 926,575 | 0.0927 | 0.023 | 0.132 | 9.639 | 0.165 | −0.071 | 0.848 | 1.259 | 224.9 |
+| rough ≤801 | 813,194 | 0.0813 | 0.034 | 0.258 | 7.846 | 0.235 | −0.058 | 0.866 | 1.113 | 173.6 |
+| rough ≤1601 | 712,778 | 0.0713 | 0.055 | 0.291 | 6.583 | 0.300 | −0.047 | 0.903 | 0.936 | 133.3 |
+| rough ≤3163 | 664,579 | 0.0665 | 0.082 | 0.318 | 6.566 | 0.319 | −0.038 | 0.958 | 0.871 | 116.4 |
+| **primes** | **664,579** | **0.0665** | **0.082** | **0.318** | **6.566** | **0.319** | **−0.038** | **0.958** | **0.871** | **116.4** |
+
+Every column is monotone in the bound. At bound 3163 = ⌊√N⌋ the rough set *is*
+the primes — identical count, every statistic identical to the last digit — for
+the structural reason that a composite with no factor below √N does not fit
+under N. **The conclusion is unchanged and now holds at 200× the range: nothing
+separates the primes from a sieve-defined set except sieve depth.**
+
+## Why the bound-199 separations appeared: χ²/dof is not scale-free
+
+This is a fifth calibration bug in the same family and it is worth stating
+plainly. Most statistics here are χ² per degree of freedom. Under pure noise
+that lands at 1 regardless of sample size — which is why it looked safe. But
+when there is a *systematic* relative deviation δ between bins, it goes as
+
+    χ²/dof ≈ 1 + δ² · E
+
+where E is the expected count per bin. So a set with more members reads a larger
+dispersion for *identical* relative structure. The rough ≤199 set has 1.57× the
+primes' members, and that alone inflates it.
+
+Checked directly. Subsampling rough ≤199 down to the primes' exact count:
+
+| statistic | rough ≤199 full | subsampled to prime count | primes |
+|---|---|---|---|
+| `ulam.diag_dispersion` | 11.871 | 6.354 | 6.566 |
+| `modular_grid.reduced_dispersion` | 0.012 | 0.409 | 0.082 |
+
+The Ulam separation is entirely the count: matched on count, an 81% gap becomes
+3%. The modular-grid row is a warning about the control rather than a result —
+random subsampling *injects* the Poisson noise that an evenness statistic is
+measuring, so it drives a hyper-even set from 0.012 up to 0.409 and is not a
+valid matched-count control for that family. The bound sweep is, and it agrees.
+
+**Consequence for the harness: dispersion statistics are only comparable between
+sets of matched count.** The Cramér and sieved nulls always were (both matched
+to π(N)); the rough null is not, and every rough z at a bound well below √N must
+be read through the sweep rather than on its own.
+
+## The smoothness landscape
+
+Circular by construction, as pre-registered, and it earns its place anyway: it
+makes the barrier visible. At N = 10⁷ the rough ≤199 panel resolves into exactly
+three strata, and their positions are derivable rather than observed:
+
+- **r = 1**: the primes.
+- **a band at r ∈ [0.50, 0.67]**: the semiprimes. If n = p·q with both factors
+  above 199, the larger satisfies q ≥ √n, giving r ≥ ½; and p > 199 forces
+  q < n/199, giving r < 1 − log 199/log n = 0.671 at n = 10⁷. The band's floor
+  and ceiling are those two lines.
+- **a thin bar near r ≈ ⅓**: 3-almost-primes, which need n > 199³ ≈ 7.9 × 10⁶ and
+  so exist only in the last fifth of the range.
+
+The gap between r = 0.671 and r = 1 is the whole result of this project drawn as
+a picture. Everything in that band shares its density and all of its
+small-residue statistics with the primes, and no encoding in this harness — none
+of which look above the sieve bound — can tell the two apart.
+
+## Scorecard, round 3
+
+| prediction | outcome |
+|---|---|
+| nothing separates across all 11 reps at bound 199 | **miss** — 6 of 12 read SURVIVES |
+| where a statistic moves, the bound sweep decides | **held** — monotone, converging exactly |
+| the difference set is dominated by large-factor semiprimes with smooth density | **hit** — visible as the r ∈ [0.5, 0.67] band |
+| a separation should be treated as a bug until replicated | **applied** — all six traced to count scaling |
+| smoothness landscape separates trivially and proves nothing | **hit** — mean r = 1.000 by definition |
+
+Running total across three rounds: eleven apparent findings, eleven artefacts.
+
+## Engineering N = 10⁷ needed
+
+- the square-spiral coordinates had to be vectorised; the previous Python list
+  of 10⁷ step tuples would have needed several GB (verified identical to the old
+  implementation at three sizes)
+- residue histograms of all integers cached on the context — recomputing them
+  per evaluation cost 8.7 s × ~26 evaluations per representation
+- Sacks and polar renders rasterised to 2D histograms above 200k points
+- the exponent-vector PCA fitted on a 400k subsample instead of all 10⁷

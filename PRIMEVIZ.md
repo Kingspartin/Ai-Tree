@@ -137,6 +137,7 @@ confident, plausible-looking result rather than an obvious failure:
 | density window overrunning the ends of the range | a red stripe at low n in the fluctuation map |
 | reading one noisy draw as a trend | a "systematic large-L deflation" that a 12-draw matched-density ensemble showed does not exist |
 | density-matching a deterministic control by running-count | a control that was simultaneously too even (gaps, fluctuation) and too uneven (residues) |
+| comparing χ²/dof between sets of different size | six "SURVIVES" verdicts at N=10⁷ that were the rough null's 1.57× member count, not its structure |
 
 The habit that catches them: build a control whose answer you already know and
 check the statistic returns 1.0 before believing anything it says about the
@@ -145,6 +146,15 @@ property you are testing** (a flat control cannot expose a density-trend
 artefact, and it is what hid the first bug), and **one draw is not a control**
 (at the widest scales the fluctuation statistic's own sd/mean is 0.26, easily
 enough to fake a trend).
+
+**χ²/dof is not scale-free.** Under noise it sits at 1 at any sample size, but a
+*systematic* relative deviation δ gives χ²/dof ≈ 1 + δ²·E with E the expected
+count per bin — so a larger set reads higher for identical structure. Dispersion
+statistics are comparable only between sets of matched count. `cramer` and
+`sieved` always are (both matched to π(N)); `rough` is not, and its z must be
+read through the sieve-bound sweep. Note also that random subsampling is *not* a
+valid matched-count control for evenness statistics: it injects the very Poisson
+noise they measure.
 
 ## Independence of evidence
 

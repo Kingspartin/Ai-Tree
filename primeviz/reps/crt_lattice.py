@@ -63,7 +63,7 @@ def _independence(H, n_candidates: float | None = None):
 
 
 def _n_candidates(ctx, p, q):
-    a = np.flatnonzero(ctx.admissible)
+    a = ctx.admissible_idx
     return float(((a % p != 0) & (a % q != 0)).sum())
 
 

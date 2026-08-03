@@ -8,7 +8,7 @@ will show it as lines.
 from __future__ import annotations
 
 import numpy as np
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 from ..registry import Representation
 from ..stats import dispersion
@@ -61,7 +61,7 @@ def ulam_stats(iset, ctx):
     m = (int(np.sqrt(M)) - 1) // 2
     sx, sy, _ = _ulam_index(iset, ctx)
     # candidate pool: integers coprime to 210, which is where the primes live
-    na = np.flatnonzero(ctx.admissible[: M + 1])
+    na = ctx.ulam_admissible
     ax_, ay_ = x[na - 1], y[na - 1]
     out = {}
     families = {
@@ -121,10 +121,18 @@ def sacks_render(iset, sf, ctx):
     X, Y = ctx.sacks
     v = iset.values
     ax = sf.subplots(1, 1)
-    ax.scatter(
-        X[v], Y[v], s=1.5, c=SET_COLORS[iset.key], linewidths=0, alpha=0.95
-    )
     lim = np.sqrt(ctx.N) * 1.02
+    if v.size > 200_000:
+        # rasterise: a scatter of 10^6 points is neither fast nor readable
+        H, _, _ = np.histogram2d(X[v], Y[v], bins=900,
+                                 range=[[-lim, lim], [-lim, lim]])
+        ax.imshow(np.sqrt(H.T), origin="lower", extent=[-lim, lim, -lim, lim],
+                  cmap=LinearSegmentedColormap.from_list(
+                      "s", [SURFACE, SET_COLORS[iset.key]]),
+                  interpolation="nearest")
+    else:
+        ax.scatter(X[v], Y[v], s=1.5, c=SET_COLORS[iset.key], linewidths=0,
+                   alpha=0.95)
     ax.set_xlim(-lim, lim)
     ax.set_ylim(-lim, lim)
     ax.set_aspect("equal")
@@ -132,17 +140,19 @@ def sacks_render(iset, sf, ctx):
     bare(ax)
 
 
-def _sacks_bins(N, nb=720):
-    n = np.arange(N + 1, dtype=float)
-    frac = np.modf(np.sqrt(n))[0]
-    return np.minimum((frac * nb).astype(int), nb - 1), nb
+def _sacks_bins(ctx, nb=720):
+    key = ("sacks_bins", nb)
+    if key not in ctx.cache:
+        frac = np.modf(np.sqrt(np.arange(ctx.N + 1, dtype=np.float64)))[0]
+        ctx.cache[key] = np.minimum((frac * nb).astype(np.int32), nb - 1)
+    return ctx.cache[key], nb
 
 
 def sacks_stats(iset, ctx):
     out = {}
-    adm = np.flatnonzero(ctx.admissible)
+    adm = ctx.admissible_idx
     for nb in (360, 720):
-        idx, nb = _sacks_bins(ctx.N, nb)
+        idx, nb = _sacks_bins(ctx, nb)
         cells = np.bincount(idx[2:], minlength=nb).astype(float)
         cells_adm = np.bincount(idx[adm], minlength=nb).astype(float)
         obs = np.bincount(idx[iset.values], minlength=nb).astype(float)
@@ -153,7 +163,7 @@ def sacks_stats(iset, ctx):
     # O(1/k) -- so a global angular bin smears it. Measure angle within thin
     # radial annuli instead, where the drift is small, then average.
     nb, n_ann = 90, 8
-    idx, _ = _sacks_bins(ctx.N, nb)
+    idx, _ = _sacks_bins(ctx, nb)
     root = np.sqrt(np.arange(ctx.N + 1, dtype=float))
     ann = np.minimum((root / (np.sqrt(ctx.N) / n_ann)).astype(int), n_ann - 1)
     vals = []

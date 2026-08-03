@@ -30,21 +30,30 @@ N_BASIS = 20
 # --- embed the integers themselves -------------------------------------------
 
 
+PCA_MAX = 400_000
+
+
 def _pca_all(ctx):
-    if not hasattr(ctx, "_pca_all_cache"):
-        E = ctx.exps(ctx.integers).astype(np.float32)
+    """PCA of the exponent vectors, on a subsample of the integers at large N.
+
+    Factoring all 10^7 integers onto 20 basis primes is a 400 MB int16 array
+    before PCA even starts; the projection is identical on a subsample.
+    """
+    if "pca_all" not in ctx.cache:
+        idx = ctx.subsample(ctx.integers, PCA_MAX, seed=5)
+        E = ctx.exps(idx).astype(np.float32)
         p = PCA(n_components=2, random_state=0).fit(E)
-        ctx._pca_all_cache = (p.transform(E), p.explained_variance_ratio_)
-    return ctx._pca_all_cache
+        ctx.cache["pca_all"] = (idx, p.transform(E), p.explained_variance_ratio_)
+    return ctx.cache["pca_all"]
 
 
 def embed_render(iset, sf, ctx):
-    Z, evr = _pca_all(ctx)
+    idx, Z, evr = _pca_all(ctx)
     ax = sf.subplots(1, 1)
     sub = ctx.subsample(np.arange(Z.shape[0]), 40_000, seed=3)
     ax.scatter(Z[sub, 0], Z[sub, 1], s=5, c=INK_MUTED, alpha=0.35, linewidths=0,
                label="all integers")
-    m = iset.mask[2 : ctx.N + 1]
+    m = iset.mask[idx]
     ax.scatter(Z[m, 0], Z[m, 1], s=10, c=SET_COLORS[iset.key], alpha=0.8,
                linewidths=0, label=iset.key)
     ax.set_title(

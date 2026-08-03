@@ -12,6 +12,7 @@ import numpy as np
 
 from . import stats as st
 from .context import Context
+from . import numbers
 from .numbers import DETERMINISTIC_NULLS, build_sets, null_replicates
 from .registry import Representation, selected
 from .theme import INK_2, INK_MUTED, SET_COLORS, VERDICT_COLORS, apply_style
@@ -60,15 +61,15 @@ def critique(rep: Representation, res: st.StatResult | None) -> tuple[str, str]:
         )
     elif v == "DEEP-COPRIMALITY":
         line = (
-            f"DEEP-COPRIMALITY - {h}. Beats avoidance of 2,3,5,7 but not avoidance of "
-            f"every prime up to 47. Still divisibility, just deeper - and the "
-            f"deterministic rough set has no primality in it at all."
+            f"DEEP-COPRIMALITY - {h}. Beats avoidance of 2,3,5,7 but not avoidance "
+            f"of every prime up to {numbers.ROUGH_BOUND}. Still divisibility, just "
+            f"deeper - and the deterministic rough set has no primality in it."
         )
     elif v == "SURVIVES":
         line = (
             f"SURVIVES - {h}. Not reproduced by matched-density randomness, by "
             f"small-factor avoidance, or by a deterministic set avoiding every prime "
-            f"up to 47. Needs a mechanism."
+            f"up to {numbers.ROUGH_BOUND}. Needs a mechanism."
         )
     else:
         line = f"INCONCLUSIVE - {h}. Degenerate null spread; statistic needs work."
