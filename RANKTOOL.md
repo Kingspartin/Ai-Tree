@@ -254,10 +254,11 @@ Corollary obtained (not assumed):
 
 **Are the undecided cases laziness or real Ш?** Re-running the 55 undecided
 curves from the sweep with a 6× deeper point search resolved exactly **2** of
-them (both to rank 1 — they were genuinely just large generators). The other
-**53 are real Ш obstructions**: no amount of searching will close them, because
-the missing points do not exist. That is the honest shape of the problem, and
-it is why the tool distinguishes "not found" from "not there".
+them (both to rank 1 — they were genuinely just large generators). Repeating
+the experiment at a 20× deeper bound resolved **the same 2 and nothing more**.
+So the other **53 are real Ш obstructions**: no amount of searching will close
+them, because the missing points do not exist. That is the honest shape of the
+problem, and it is why the tool distinguishes "not found" from "not there".
 
 The single undecided congruent case is `n = 17` — the classical
 Lind–Reichardt curve `2y² = x⁴ − 17`, the textbook example of a genus-1 curve
