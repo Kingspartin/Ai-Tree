@@ -53,7 +53,7 @@ from dataclasses import dataclass
 from math import gcd
 from fractions import Fraction as F
 
-from .curve import Curve, O, Point
+from .curve import Curve, Point
 
 _PAD = 1e-9  # absolute padding added to every logarithm, to swallow FP error
 

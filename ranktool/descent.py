@@ -45,9 +45,10 @@ Back-map:  x = d u^2 / v^2 ,  y = d u w / v^3.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from fractions import Fraction as F
 from math import gcd
 
-from .arith import is_square, sqrt_exact, squarefree_divisors, squarefree_part
+from .arith import sqrt_exact, squarefree_divisors, squarefree_part
 from .curve import DescentModel, O, Point
 from .local import everywhere_locally_soluble
 
@@ -117,8 +118,6 @@ def search_homogeneous_space(d: int, a: int, e: int, bound: int, start: int = 1)
 
 def point_from_space(d: int, u: int, v: int, w: int) -> Point:
     """(u,v,w) on C_d  ->  the corresponding point of E(Q)."""
-    from fractions import Fraction as F
-
     if v == 0:
         return O
     x = F(d * u * u, v * v)

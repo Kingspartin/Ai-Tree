@@ -192,17 +192,17 @@ class Curve:
         c = [self.b6, 2 * self.b4, self.b2, F(4)]  # ascending
         return _rational_roots(c)
 
-    def short_model(self) -> tuple[int, int]:
-        """Integral short model Y^2 = X^3 + A X + B, via (x,y) -> (36x+3b2, 216y)
-        composed with clearing denominators.  Returns (A, B)."""
+    def _short_scaling(self):
+        """(A, B, u) for the integral short model Y^2 = X^3 + A X + B.
+
+        Shared by short_model() and to_short() so the curve and the points can
+        never end up on two different models.
+        """
         A = -27 * self.c4
         B = -54 * self.c6
-        # clear denominators by (A,B) -> (u^4 A, u^6 B)
-        dens = [A.denominator, B.denominator]
         u = 1
-        for p in set(prime_divisors(dens[0]) + prime_divisors(dens[1])):
-            eA = _pval(A, p)
-            eB = _pval(B, p)
+        for p in set(prime_divisors(A.denominator) + prime_divisors(B.denominator)):
+            eA, eB = _pval(A, p), _pval(B, p)
             k = 0
             while 4 * k + eA < 0 or 6 * k + eB < 0:
                 k += 1
@@ -210,20 +210,17 @@ class Curve:
         A *= u ** 4
         B *= u ** 6
         assert A.denominator == 1 and B.denominator == 1
-        return int(A), int(B)
+        return int(A), int(B), u
+
+    def short_model(self) -> tuple[int, int]:
+        """Integral short model Y^2 = X^3 + A X + B."""
+        A, B, _ = self._short_scaling()
+        return A, B
 
     def to_short(self, P: Point) -> Point:
-        """Image of P on the integral short model (same rank, same heights)."""
-        A0 = -27 * self.c4
-        B0 = -54 * self.c6
-        dens = [A0.denominator, B0.denominator]
-        u = 1
-        for p in set(prime_divisors(dens[0]) + prime_divisors(dens[1])):
-            eA, eB = _pval(A0, p), _pval(B0, p)
-            k = 0
-            while 4 * k + eA < 0 or 6 * k + eB < 0:
-                k += 1
-            u *= p ** k
+        """Image of P on the integral short model, via (x,y) -> (36x+3b2, 216y)
+        followed by the scaling that clears denominators."""
+        _, _, u = self._short_scaling()
         if P.inf:
             return O
         X = 36 * P.x + 3 * self.b2

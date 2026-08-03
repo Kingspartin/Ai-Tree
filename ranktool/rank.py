@@ -19,7 +19,7 @@ from fractions import Fraction as F
 from math import gcd
 
 from .arith import sqrt_exact
-from .curve import Curve, DescentModel, O, Point, to_descent_model, two_torsion_models
+from .curve import Curve, DescentModel, Point, two_torsion_models
 from .descent import DescentResult, two_isogeny_descent
 from .height import HeightEngine, Interval
 
