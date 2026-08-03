@@ -58,6 +58,43 @@ Roughly half the numeric ranges missed, and they missed in a consistent
 direction: I repeatedly underestimated how much more even the rough sets are.
 The directional and mechanistic calls held.
 
+## The wall has a name: the parity problem
+
+Verified before writing it down, not taken from memory. The **parity problem**
+in sieve theory was identified and named by **Atle Selberg in 1949**. The
+statement: sieve methods cannot distinguish integers with an odd number of prime
+factors from those with an even number. If a set consists entirely of numbers
+with an odd number of prime factors, or entirely of numbers with an even number,
+sieve theory on its own yields no non-trivial lower bound on its size, and upper
+bounds are off by a factor of at least 2. Since a prime is the case "exactly one
+prime factor" — odd — sieves cannot isolate primes from almost-primes. This is
+why sieve results bottom out at "prime or semiprime": Chen's theorem
+(stated 1966, published 1973) gets every sufficiently large even number as a
+prime plus a prime-or-semiprime, and no further. From around 1996 Friedlander
+and Iwaniec developed parity-sensitive sieves that inject extra input to get
+past it.
+
+**What this harness did, stated exactly.** Every statistic in it is a function
+of two things: the set's density, and how the set distributes across residue
+classes to small moduli. That is precisely the data a sieve has access to. The
+`rough ≤ b` null is built to match the primes on exactly that data while
+containing semiprimes — it *is* the parity problem's counterexample construction,
+arrived at here by looking for a fair control rather than by reading it off.
+The sweep then shows what the barrier predicts: no statistic separates them.
+
+**Where the analogy stops.** The parity problem is a theorem about what can be
+*proved* from sieve axioms, i.e. from bounds on |A_d|. Nothing here proves
+anything. What happened is weaker and empirical: eleven encodings, all of them
+functions of sieve data, all failed to separate primes from a sieve-matched set
+— which is consistent with the barrier and explained by it, but is not a
+derivation of it. The honest claim is that the search walked into a known wall
+from the outside and can now see its shape.
+
+That is the actual result of this project. Every apparent finding in iterations
+1 and 2 was a rediscovery of "these integers have no small factors", and the
+reason no encoding got further is that no encoding was ever looking at anything
+else.
+
 ## P2: the disagreement, resolved
 
 You predicted the Ulam diagonals would mostly survive, on the grounds that they
@@ -73,10 +110,28 @@ all passed: the unthinned sets have no thinning rule to blame; the sweep is
 monotone rather than jumping; and the calibration reps stay put at matched
 density (polar 1.041 vs 1.037, sacks 0.985 vs 0.990). The construction is sound.
 
-What is true is that quadratic progressions really are enriched — the mechanism
-is that a progression's density of integers coprime to p depends on whether its
-discriminant is a quadratic residue mod p. That mechanism just does not need
-primality, only sieving.
+**Settled, and recorded without softening: the Ulam diagonals are a sieve
+effect.** The mechanism is the quadratic-residue one — a quadratic progression's
+density of integers coprime to p depends on whether the progression's
+discriminant is a quadratic residue mod p, so progressions split into
+richer and poorer families for every p, and the enrichment compounds over all p
+up to the sieve bound. Quadratic enrichment requires sieving and not primality.
+"Prime-rich quadratics" is a misnomer: they are *rough-rich* quadratics, and the
+primes inherit the effect by being rough, not by being prime.
+
+## Hyper-evenness: retired as a finding
+
+`fluct_small_L` is 0.579 for rough ≤199 against 0.578 for the primes; the
+modular sweep is 0.175 against 0.181. The 3-to-6 sd gap below the
+matched-density Poisson ensemble is entirely reproduced by a sieve-defined set.
+It is a sieve effect, not a prime effect, and it is withdrawn as a result.
+
+The mechanism is not mysterious once stated: a set that avoids every prime up to
+b is confined to the ∏(1−1/p) fraction of residues mod the primorial of b that
+survive, and within that constraint its counts in any window or class are pinned
+by the wheel structure rather than free to fluctuate. Deeper sieve, tighter
+pinning — which is exactly the monotone column in the sweep. The primes are the
+b → √N end of that, and nothing more.
 
 ## P4: my diagnosis was wrong, and your control caught it
 

@@ -111,3 +111,57 @@ four views of the same two facts: the members avoid small residues, and their
 density is smooth. Agreement between them is close to guaranteed and is not
 corroboration. The writeup will say so, and this run tests all four against the
 same null precisely because they are one claim, not four.
+
+---
+
+# Round 3 predictions: N = 10⁷, primes vs rough ≤ 199
+
+Written and committed **before** the N = 10⁷ code or the new representation was
+written. Feasibility was benchmarked first (see below); no comparison was run.
+
+## Setup facts (measured, not predicted)
+
+- π(10⁷) = 664,579; rough ≤199 = 1,044,289 (density 0.1044)
+- √N ≈ 3,163, so a bound of 199 sits well below it and the difference set is
+  ~380,000 integers — overwhelmingly semiprimes p·q with 199 < p ≤ q, plus a
+  thin tail of 3-almost-primes
+- this is the gap that did not exist at N = 50,000, where rough ≤199 was six
+  elements from the primes
+
+## The prediction: nothing separates
+
+Across all eleven existing representations, primes vs rough ≤199 unthinned:
+
+- **every headline statistic agrees within |z| < 3**, where z is in units of the
+  sieved ensemble's spread
+- the difference set is dominated by semiprimes with two large factors, and that
+  set has smooth density and the same small-residue structure, so no statistic
+  built on residues + density can see it
+- specifically: `mod_grid.reduced_dispersion`, `fluct_small_L`,
+  `ulam.diag_dispersion`, `crt_independence`, `gap_lag1_corr`,
+  `polar_710`, `sacks_local`, `deep_sieve_ratio` all match to within a few
+  percent, closer than the bound-47 rows did at N = 50,000
+- density is *not* matched (0.1044 vs 0.0665, a 57% gap), which is a larger
+  confound than at N = 50,000 and will move some statistics on its own. Where a
+  statistic moves, the bound sweep at N = 10⁷ is what decides whether it is
+  density or something else
+
+**If something does separate, it is to be treated as a bug until it survives
+replication** — a different seed, a different N, and a bound sweep showing it is
+not monotone in the sieve bound. Prior experience in this project: five apparent
+findings so far, five artefacts.
+
+## The one representation that could legitimately separate
+
+`smoothness_landscape` colours every integer by log(largest prime factor)/log n.
+This is the only encoding here that touches large factors, so it is the only one
+not confined to sieve data — and it will separate the primes trivially and
+completely, because a prime is exactly the ratio-1 case.
+
+That is not a discovery and must not be reported as one. **It is circular**: the
+ratio requires factoring n, so the instrument already knows the answer it
+returns. It is an instrument for understanding — for seeing what the difference
+set actually looks like, and where the primes sit in the Dickman landscape — not
+for prediction. Predicted: primes are a degenerate spike at ratio 1.0; rough ≤b
+sets appear as bands with a floor rising as log b / log n; the Cramér null spans
+the full smoothness distribution.
