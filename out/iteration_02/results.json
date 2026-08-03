@@ -13,7 +13,7 @@
       "headline": "crt_independence",
       "mechanism": "Any dependence would mean the members are not spread across residue classes mod pq the way they are spread mod p and mod q separately.",
       "notes": "Grey means the cell holds exactly what independence predicts. A value of \u03c7\u00b2/dof near 1 means the two residues carry no information about each other; the picture being visibly speckled at this sample size is expected \u2014 roughly 10 members per cell \u2014 and is noise, not texture. Compare the reduced statistic with `crt_independence_unreduced` to see how much a naive version of this test would have been driven by the empty row and column alone.",
-      "image": "iteration_01/crt_lattice.png",
+      "image": "iteration_02/crt_lattice.png",
       "errors": [],
       "stats": {
         "crt_independence": {
@@ -73,7 +73,7 @@
       "headline": "frac_at_origin",
       "mechanism": "Tautological, and worth stating plainly so it is not mistaken for a finding: the embedding's coordinates are divisibility by the primes up to 71, and a prime above 71 is divisible by none of them, so it maps to the zero vector by definition. `frac_at_origin` \u2248 1 for the primes is a restatement of what a prime is. It separates from the sieved null only because that null is sieved at 7, not at 71 -- a deeper null (integers with no factor below 71) would erase this entirely.",
       "notes": "Read the axes before the pattern: the coordinates are 'how many times does 2, 3, 5 ... divide n'. Almost every prime is at the origin because none of them do \u2014 the primes panel is one coloured dot. Note the disagreement between eye and statistic here, in the direction people usually assume is impossible: the *picture* cannot tell the primes from the sieved null (both collapse to the origin, since PC1 and PC2 are essentially the exponents of 2 and 3, which both sets have set to zero), while the *statistic* separates them at z = 122. Neither is wrong; they are answering different questions, and the statistic's question happens to be a tautology.",
-      "image": "iteration_01/factor_embed.png",
+      "image": "iteration_02/factor_embed.png",
       "errors": [],
       "stats": {
         "frac_at_origin": {
@@ -115,7 +115,7 @@
       "headline": "mean_basis_exponent_shift",
       "mechanism": "Every prime past 2 is odd, so p\u22121 is always even, and the density of the basis exponents shifts up accordingly. That is parity, not depth: a null whose members are already odd shows the same thing.",
       "notes": "Both projections are log-scaled density hexbins, not scatter, because 10\u2074 points overplot. PCA is dominated by the 2-adic valuation of n\u22121. Treat the UMAP clusters as furniture, not findings: the exponent vectors are short integer vectors with many exact duplicates, so UMAP separates them into islands of identical points, and it draws the same islands on all three panels. Cluster count and shape here are a function of n_neighbors and of the discreteness of the coordinates, not of which integers went in.",
-      "image": "iteration_01/factor_shift.png",
+      "image": "iteration_02/factor_shift.png",
       "errors": [],
       "stats": {
         "mean_v2_of_shift": {
@@ -166,7 +166,7 @@
       "headline": "reduced_dispersion",
       "mechanism": "Two separate things live in this picture. The dark columns are trivial: a class j mod k with gcd(j,k) = d > 1 contains only multiples of d, so it holds no primes past d itself. The headline number is not that \u2014 it is the spread across the classes that are allowed, and for the primes it comes out far *below* random. The primes' counts in the reduced classes mod k sit within a few units of dead level where a random set of the same size would scatter by \u00b1\u221acount. The reason is that the primes are one fixed set, not a sample: their counting error in each progression is a single slowly-growing quantity of order \u221aN, shared out over the \u03c6(k) classes, instead of independent per-class sampling noise of order \u221a(count) each. At N=10\u2075 that is roughly a threefold smaller deviation, i.e. an order of magnitude in \u03c7\u00b2.",
       "notes": "In the sweep, black = a residue class the set never occupies, grey = exactly the expected share, red = enriched. The banded triangle is the divisibility pattern. The headline statistic throws that pattern away: it looks only at classes coprime to k, counts candidates from the integers coprime to 210, and applies the binomial (1\u2212\u03c1) correction \u2014 so 1.0 means 'no better spread than a random choice of that many candidates', and anything well below 1 means the set is *more* even than random.",
-      "image": "iteration_01/modular_grid.png",
+      "image": "iteration_02/modular_grid.png",
       "errors": [],
       "stats": {
         "reduced_dispersion": {
@@ -244,7 +244,7 @@
       "headline": "walk_drift_mean",
       "mechanism": "",
       "notes": "The dashed circle is the distance an ordinary random walk of that many steps would typically reach, so it is the drift = 1 contour and every panel is readable on its own terms despite the differing axis scales. A path that fills its circle and ends near the rim is equidistribution; one that sets off in a straight line past it is a persistent bias; one that stays huddled well inside \u2014 which is what the primes do \u2014 is a set spread *more* evenly than chance.",
-      "image": "iteration_01/modular_walk.png",
+      "image": "iteration_02/modular_walk.png",
       "errors": [],
       "stats": {
         "drift_k8": {
@@ -340,7 +340,7 @@
       "headline": "ang_dispersion_710",
       "mechanism": "",
       "notes": "Arm counts 6, 44 and 710 are the denominators you get when you approximate 2\u03c0 by a fraction; 100 is a non-resonant control. Dispersion is measured against the number of candidate integers per angular bin, so a set that is simply 'some integers' scores ~1 no matter how striking the picture looks. The `_allint` variants use all integers as candidates: at 710 bins they read \u224821 for the primes and \u224821 for the sieved null alike, a twentyfold 'signal' that is entirely the even bins being empty. Instructive as a demonstration of how easily a statistic can be manufactured out of nothing.",
-      "image": "iteration_01/polar_radian.png",
+      "image": "iteration_02/polar_radian.png",
       "errors": [],
       "stats": {
         "ang_dispersion_allint_6": {
@@ -427,7 +427,7 @@
       "headline": "gap_lag1_corr",
       "mechanism": "Consecutive members that are all odd force every gap even, and members avoiding 3 as well push gaps toward multiples of 6 -- both are consequences of small-factor avoidance, and a null with the same avoidance shows the same spikes. Any lag-1 correlation beyond that would be genuine memory.",
       "notes": "The third panel divides the observed (g\u2096, g\u2096\u208a\u2081) table by what it would be if consecutive gaps were independent, so grey is 'no memory' and any coloured cell is a gap pair that happens more or less often than chance. The histogram's spikes at multiples of 6 are the thing to be suspicious of.",
-      "image": "iteration_01/prime_gaps.png",
+      "image": "iteration_02/prime_gaps.png",
       "errors": [],
       "stats": {
         "gap_var_ratio": {
@@ -487,7 +487,7 @@
       "headline": "local_ang_dispersion",
       "mechanism": "frac(\u221an) is almost constant along k\u00b2+bk+c, so each quadratic progression is roughly one angular bin. Progressions that are identically even, or identically divisible by 3, hold no primes and the rest absorb the density \u2014 that is what the eye reads as rays, and the sieved null draws the same ones.",
       "notes": "Angle is 2\u03c0\u00b7frac(\u221an), so a quadratic n = k\u00b2+bk+c sits at a *nearly* fixed angle \u2014 it drifts by O(1/k), which is why the global binning is nearly blind and the headline uses thin radial annuli instead. Candidates are the integers coprime to 210, so a ray that exists only because its progression is all-even does not count.",
-      "image": "iteration_01/sacks_spiral.png",
+      "image": "iteration_02/sacks_spiral.png",
       "errors": [],
       "stats": {
         "ang_dispersion_allint_360": {
@@ -547,7 +547,7 @@
       "headline": "diag_dispersion",
       "mechanism": "Along any diagonal of this spiral n advances by 4k+const, so n mod 2 \u2014 and for half of them n mod 3 \u2014 is fixed. Every diagonal whose fixed residue shares a factor with 2 or 3 is empty of primes and the rest absorb the density, which is the whole of the naive statistic. Once candidates are restricted to integers coprime to 210 that mechanism is spent, and what is left is the same hyper-evenness seen in the modular sweep rather than a preference for particular quadratics.",
       "notes": "Diagonals of the square spiral are values of quadratics 4k\u00b2+bk+c; rows and columns are not, and act as an internal control \u2014 `diag_over_row` is the ratio. The headline counts candidates from the integers coprime to 210 and applies the (1\u2212\u03c1) correction, so the diagonals that are empty *because they are all even* no longer contribute; `diag_dispersion_allint` is the naive version that lets them count, and the gap between the two is how much of the famous diagonal effect is just parity.",
-      "image": "iteration_01/ulam_spiral.png",
+      "image": "iteration_02/ulam_spiral.png",
       "errors": [],
       "stats": {
         "diag_dispersion_allint": {
@@ -630,6 +630,117 @@
           "sieved_mean": 0.9223448060018958,
           "sieved_sd": 0.08051069541714427,
           "sieved_z": 6.225930304281654
+        }
+      }
+    },
+    {
+      "key": "count_fluctuation",
+      "title": "Multiscale count-fluctuation map",
+      "question": "at any scale, does the set clump or resist clumping along the number line?",
+      "iteration": 2,
+      "verdict": "SURVIVES",
+      "critique": "SURVIVES - fluct_dispersion_small_L=0.578 (Cramer z=-7.272, sieved z=-5.546). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is BELOW the nulls' - more even/less clumped than random.",
+      "headline": "fluct_dispersion_small_L",
+      "mechanism": "Values below 1 mean the count in a window is pinned closer to its expectation than independent sampling would allow \u2014 the same hyper-evenness the modular sweep found, but with no reference to residues at all, so it cannot be a divisibility effect in disguise.",
+      "notes": "The map is a scale-space view: one row per window length, colour is how many standard deviations the count in that window sat from its local expectation. Grey everywhere means fluctuation exactly as large as chance predicts. Red and blue patches that persist upward through the rows are genuine excursions \u2014 a run of the number line that is rich or poor at several scales at once. The curve below collapses each row to a single number, and the dashed line is what a randomly sprinkled set gives. Two calibration facts, both measured against a flat random set drawn on the same candidate pool. (1) That control reads 1.00\u20131.05 at the smallest scales and never trends, but every set with a *varying* density sags at large L \u2014 the sieved null falls from 0.98 to 0.53 across the range \u2014 because the measurement window is a sixth of the window estimating its own expectation. The downward slope is therefore an artefact of the estimator, not a finding; only the gap between the curves is real. (2) The Cram\u00e9r column runs ~1.6\u00d7 high because that null lives on all integers while the candidate pool is the integers coprime to 210, so its binomial variance is mismatched. Read the sieved column: it shares both the support and the density profile of the primes. The headline uses the smallest third of scales, where the control sits at 1.0 and the sieved null at 0.95.",
+      "image": "iteration_02/count_fluctuation.png",
+      "errors": [],
+      "stats": {
+        "fluct_dispersion": {
+          "real": 0.41645381918978214,
+          "cramer_mean": 1.564550634668568,
+          "cramer_sd": 0.24868865348383384,
+          "cramer_z": -4.616603127626885,
+          "sieved_mean": 0.9435433590927783,
+          "sieved_sd": 0.13681537593437795,
+          "sieved_z": -3.8525606957788807
+        },
+        "fluct_dispersion_small_L": {
+          "real": 0.5782543365251531,
+          "cramer_mean": 1.6043047475969507,
+          "cramer_sd": 0.14110432240639903,
+          "cramer_z": -7.271573213162367,
+          "sieved_mean": 0.9403595575724935,
+          "sieved_sd": 0.0652873101380343,
+          "sieved_z": -5.546333893703938
+        },
+        "fluct_dispersion_large_L": {
+          "real": 0.26391630514600173,
+          "cramer_mean": 1.5217876551422078,
+          "cramer_sd": 0.49211941883504723,
+          "cramer_z": -2.5560286829848304,
+          "sieved_mean": 0.9476798881986414,
+          "sieved_sd": 0.2222584359903994,
+          "sieved_z": -3.07643478190486
+        },
+        "fluct_slope": {
+          "real": -0.41764515948499836,
+          "cramer_mean": -0.055309081245881596,
+          "cramer_sd": 0.14529247412840532,
+          "cramer_z": -2.493839274282676,
+          "sieved_mean": -0.013275855096103408,
+          "sieved_sd": 0.10065860356430088,
+          "sieved_z": -4.017235388434364
+        }
+      }
+    },
+    {
+      "key": "pair_spectrum",
+      "title": "All-pairs difference spectrum",
+      "question": "is any distance between members taken more often than its number of chances?",
+      "iteration": 2,
+      "verdict": "SURVIVES",
+      "critique": "SURVIVES - pair_corr_dispersion=1.455 (Cramer z=-32.755, sieved z=15.134). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is ABOVE the nulls' - more clumped than random.",
+      "headline": "pair_corr_dispersion",
+      "mechanism": "Not memory, and not new: this is the sieved null's 7 showing. When d shares a factor p with one of 11\u202647, the pair (n, n+d) occupies a single residue class mod p instead of two, so it has one fewer way to be composite and both ends are likelier to be prime. `deep_sieve_ratio` isolates it \u2014 the primes read \u22481.06, the sieved null \u22481.00, because that null only avoids factors up to 7 and so has no opinion about 11 through 47. It is the same mechanism suspected behind the surviving Ulam diagonals, here measured directly instead of hypothesised. A null sieved at 47 or higher should erase this verdict; that is the test worth running next.",
+      "notes": "Both panels are already normalised by candidate pairs, so a flat grey line at 1 is the honest null result and the spikes of a raw difference histogram have deliberately been divided out. Only even distances appear: two members coprime to 210 are both odd, so an odd separation is impossible and those columns are empty by construction, not by absence of structure. Read the lower panel for vertical stripes that hold across every band \u2014 a distance favoured throughout the range is a much stronger claim than one favoured on average. The Cram\u00e9r column sits far below 1 for a mechanical reason rather than an interesting one: that null lives on all integers while the normalisation counts candidate pairs among the integers coprime to 210.",
+      "image": "iteration_02/pair_spectrum.png",
+      "errors": [],
+      "stats": {
+        "pair_corr_dispersion": {
+          "real": 1.4546235380872476,
+          "cramer_mean": 69.25941419417592,
+          "cramer_sd": 2.070077255921158,
+          "cramer_z": -32.75471505333573,
+          "sieved_mean": 0.4443421942677048,
+          "sieved_sd": 0.06675417424072742,
+          "sieved_z": 15.134354597456163
+        },
+        "pair_corr_spread": {
+          "real": 0.03764476712033608,
+          "cramer_mean": 0.1758751079706804,
+          "cramer_sd": 0.0021305994012635904,
+          "cramer_z": -64.87861620929975,
+          "sieved_mean": 0.022075454784432336,
+          "sieved_sd": 0.0018187393392091644,
+          "sieved_z": 8.560496823406089
+        },
+        "deep_sieve_ratio": {
+          "real": 1.059276663069966,
+          "cramer_mean": 1.1431272651629565,
+          "cramer_sd": 0.007084670703132957,
+          "cramer_z": -11.835497457335661,
+          "sieved_mean": 1.0000154670028039,
+          "sieved_sd": 0.0036959132428539066,
+          "sieved_z": 16.034249770809506
+        },
+        "pair_corr_max": {
+          "real": 1.0973073240107227,
+          "cramer_mean": 0.801651962764872,
+          "cramer_sd": 0.01212054779034633,
+          "cramer_z": 24.392904211914555,
+          "sieved_mean": 1.0575416115467695,
+          "sieved_sd": 0.01052016685371067,
+          "sieved_z": 3.7799507381317876
+        },
+        "pair_corr_min": {
+          "real": 0.9483527784311656,
+          "cramer_mean": 0.23183429513101853,
+          "cramer_sd": 0.008713521911681336,
+          "cramer_z": 82.23063998262096,
+          "sieved_mean": 0.9418171979020293,
+          "sieved_sd": 0.007909804332415499,
+          "sieved_z": 0.8262632366710438
         }
       }
     }

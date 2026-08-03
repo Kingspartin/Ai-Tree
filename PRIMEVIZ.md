@@ -9,11 +9,18 @@ that is recomputed over an ensemble of independent null draws. A pattern is
 called structure only when the nulls fail to reproduce it.
 
 ```
-python3 run.py                    # iteration 1, N = 100,000  (~3.5 min)
-python3 run.py --quick            # N = 20,000, no UMAP       (~10 s)
+python3 run.py                    # iteration 1, N = 50,000   (~10 s)
+python3 run.py --iteration 2      # adds representations tagged iteration 2
+python3 run.py --quick            # N = 20,000                (~5 s)
+python3 run.py --umap             # opt in to UMAP beside PCA (~1 min per set)
 python3 run.py --only prime_gaps  # re-render one representation
 python3 run.py --list             # what is registered
 ```
+
+PCA is the default projection for the exponent-vector embedding. UMAP is behind
+a flag because it costs a minute per set and, on these inputs, spends it
+separating exact duplicate vectors into islands that look identical on all
+three panels.
 
 Output lands in `out/iteration_NN/`: one PNG per representation, plus
 `report.md` and `results.json`.
@@ -100,8 +107,23 @@ primeviz/
 
 ## Cost on this machine
 
-4 cores, 15 GB RAM. N = 100,000 end to end is ~3m20s, of which **UMAP is ~3
-minutes** — everything else together is under 20 seconds. UMAP is run on the
-~9.6k members directly (no subsampling needed at this N); at N = 10⁶ it would
-need `--umap-max`. Use `--no-umap` for fast iteration and `--quick` for a
-10-second smoke test.
+4 cores, 15 GB RAM. N = 50,000 across all 11 representations is **~12 seconds**;
+N = 100,000 is ~25 s. Adding `--umap` costs about a minute per set on top,
+which is the entire reason it is opt-in. UMAP runs on the members directly at
+these sizes; past ~10⁶ it would need `--umap-max`.
+
+## Calibration is where the bugs live
+
+Every statistic in here was wrong the first time it ran, and each bug produced a
+confident, plausible-looking result rather than an obvious failure:
+
+| bug | what it looked like |
+|---|---|
+| counting against all integers rather than the candidate pool | χ²/dof of 21 on the polar plot — reproduced exactly by the null |
+| Poisson variance where the sampling is binomial | every set at half its pool looked 2× "more ordered" than random |
+| density window saturating at N | tenfold inflation at large scales, with a flat control still reading 1.0 |
+| density window overrunning the ends of the range | a red stripe at low n in the fluctuation map |
+
+The habit that catches them: build a control whose answer you already know — a
+flat random set on the same pool — and check the statistic returns 1.0 before
+believing anything it says about the primes.

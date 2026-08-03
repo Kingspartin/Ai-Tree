@@ -1,6 +1,6 @@
-# Iteration 1
+# Iteration 2
 
-`N = 50,000`  ·  seed `0`  ·  12 null replicates per model ·  8s
+`N = 50,000`  ·  seed `0`  ·  12 null replicates per model ·  10s
 
 | set | count | density |
 |---|---|---|
@@ -12,15 +12,36 @@ Verdicts are on the headline statistic, z measured against an ensemble of indepe
 
 | verdict | representation | headline | real | z vs Cramér | z vs sieved |
 |---|---|---|---|---|---|
+| **SURVIVES** | `count_fluctuation` | fluct_dispersion_small_L | 0.578 | -7.272 | -5.546 |
 | **SURVIVES** | `crt_lattice` | crt_independence | 0.708 | -13.323 | -6.772 |
 | **SURVIVES** | `factor_embed` | frac_at_origin | 0.996 | 196.872 | 92.580 |
 | **SURVIVES** | `modular_grid` | reduced_dispersion | 0.181 | -14.765 | -6.440 |
+| **SURVIVES** | `pair_spectrum` | pair_corr_dispersion | 1.455 | -32.755 | 15.134 |
 | **SURVIVES** | `prime_gaps` | gap_lag1_corr | -0.072 | -6.770 | -3.398 |
 | **SURVIVES** | `ulam_spiral` | diag_dispersion | 1.547 | -7.442 | 5.396 |
 | **COPRIMALITY** | `factor_shift` | mean_basis_exponent_shift | 3.858 | 65.797 | 0.354 |
 | **COPRIMALITY** | `sacks_spiral` | local_ang_dispersion | 0.990 | -8.485 | 0.032 |
 | **ARTIFACT** | `modular_walk` | walk_drift_mean | 0.416 | -2.494 | -2.912 |
 | **ARTIFACT** | `polar_radian` | ang_dispersion_710 | 1.037 | -0.620 | 0.967 |
+
+## Multiscale count-fluctuation map  ·  SURVIVES
+
+*at any scale, does the set clump or resist clumping along the number line?*
+
+![count_fluctuation](count_fluctuation.png)
+
+**Critique.** SURVIVES - fluct_dispersion_small_L=0.578 (Cramer z=-7.272, sieved z=-5.546). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is BELOW the nulls' - more even/less clumped than random.
+
+**Reading the picture.** The map is a scale-space view: one row per window length, colour is how many standard deviations the count in that window sat from its local expectation. Grey everywhere means fluctuation exactly as large as chance predicts. Red and blue patches that persist upward through the rows are genuine excursions — a run of the number line that is rich or poor at several scales at once. The curve below collapses each row to a single number, and the dashed line is what a randomly sprinkled set gives. Two calibration facts, both measured against a flat random set drawn on the same candidate pool. (1) That control reads 1.00–1.05 at the smallest scales and never trends, but every set with a *varying* density sags at large L — the sieved null falls from 0.98 to 0.53 across the range — because the measurement window is a sixth of the window estimating its own expectation. The downward slope is therefore an artefact of the estimator, not a finding; only the gap between the curves is real. (2) The Cramér column runs ~1.6× high because that null lives on all integers while the candidate pool is the integers coprime to 210, so its binomial variance is mismatched. Read the sieved column: it shares both the support and the density profile of the primes. The headline uses the smallest third of scales, where the control sits at 1.0 and the sieved null at 0.95.
+
+**Why it happens.** Values below 1 mean the count in a window is pinned closer to its expectation than independent sampling would allow — the same hyper-evenness the modular sweep found, but with no reference to residues at all, so it cannot be a divisibility effect in disguise.
+
+| statistic | real | Cramér mean±sd | z | sieved mean±sd | z |
+|---|---|---|---|---|---|
+| `fluct_dispersion` | 0.416 | 1.565±0.249 | -4.617 | 0.944±0.137 | -3.853 |
+| `fluct_dispersion_small_L` | 0.578 | 1.604±0.141 | -7.272 | 0.940±0.065 | -5.546 |
+| `fluct_dispersion_large_L` | 0.264 | 1.522±0.492 | -2.556 | 0.948±0.222 | -3.076 |
+| `fluct_slope` | -0.418 | -0.055±0.145 | -2.494 | -0.013±0.101 | -4.017 |
 
 ## CRT lattice — joint residues (n mod p, n mod q)  ·  SURVIVES
 
@@ -81,6 +102,26 @@ Verdicts are on the headline statistic, z measured against an ensemble of indepe
 | `reduced_dispersion_k12` | 0.175 | 0.761±0.456 | -1.285 | 0.983±0.828 | -0.976 |
 | `reduced_dispersion_k30` | 0.153 | 0.935±0.509 | -1.536 | 0.991±0.337 | -2.489 |
 | `reduced_dispersion_k47` | 0.252 | 1.639±0.284 | -4.890 | 0.922±0.156 | -4.296 |
+
+## All-pairs difference spectrum  ·  SURVIVES
+
+*is any distance between members taken more often than its number of chances?*
+
+![pair_spectrum](pair_spectrum.png)
+
+**Critique.** SURVIVES - pair_corr_dispersion=1.455 (Cramer z=-32.755, sieved z=15.134). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is ABOVE the nulls' - more clumped than random.
+
+**Reading the picture.** Both panels are already normalised by candidate pairs, so a flat grey line at 1 is the honest null result and the spikes of a raw difference histogram have deliberately been divided out. Only even distances appear: two members coprime to 210 are both odd, so an odd separation is impossible and those columns are empty by construction, not by absence of structure. Read the lower panel for vertical stripes that hold across every band — a distance favoured throughout the range is a much stronger claim than one favoured on average. The Cramér column sits far below 1 for a mechanical reason rather than an interesting one: that null lives on all integers while the normalisation counts candidate pairs among the integers coprime to 210.
+
+**Why it happens.** Not memory, and not new: this is the sieved null's 7 showing. When d shares a factor p with one of 11…47, the pair (n, n+d) occupies a single residue class mod p instead of two, so it has one fewer way to be composite and both ends are likelier to be prime. `deep_sieve_ratio` isolates it — the primes read ≈1.06, the sieved null ≈1.00, because that null only avoids factors up to 7 and so has no opinion about 11 through 47. It is the same mechanism suspected behind the surviving Ulam diagonals, here measured directly instead of hypothesised. A null sieved at 47 or higher should erase this verdict; that is the test worth running next.
+
+| statistic | real | Cramér mean±sd | z | sieved mean±sd | z |
+|---|---|---|---|---|---|
+| `pair_corr_dispersion` | 1.455 | 69.259±2.070 | -32.755 | 0.444±0.067 | 15.134 |
+| `pair_corr_spread` | 0.038 | 0.176±0.00213 | -64.879 | 0.022±0.00182 | 8.560 |
+| `deep_sieve_ratio` | 1.059 | 1.143±0.00708 | -11.835 | 1.000±0.0037 | 16.034 |
+| `pair_corr_max` | 1.097 | 0.802±0.012 | 24.393 | 1.058±0.011 | 3.780 |
+| `pair_corr_min` | 0.948 | 0.232±0.00871 | 82.231 | 0.942±0.00791 | 0.826 |
 
 ## Gap series, gap histogram, gap-pair map  ·  SURVIVES
 

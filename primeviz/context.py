@@ -11,11 +11,11 @@ from .numbers import exponent_vectors
 
 @dataclass
 class Context:
-    N: int = 100_000
+    N: int = 50_000
     seed: int = 0
     n_rep: int = 12
     umap_max: int = 20_000
-    use_umap: bool = True
+    use_umap: bool = False
     n_basis: int = 20
     out_dir: str = "out"
 
