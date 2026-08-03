@@ -1,0 +1,67 @@
+
+=== large-L deflation: is it the estimator or the sets? ===
+A flat control cannot settle this -- a flat control is what hid the
+first bug in this statistic. The matched-density Poisson control has
+the primes' density profile and independent draws. One draw is not
+enough either: at the largest L only ~27 overlapping windows exist, so
+the statistic itself is noisy. Hence an ensemble.
+
+                             L     125     160     205     264     339     435     559     717     921    1182    1517    1947    2500
+          matched-Poisson mean    0.94    0.93    0.91    0.90    0.95    0.95    0.95    0.92    0.92    0.92    0.86    0.84    0.82
+            matched-Poisson sd    0.05    0.07    0.07    0.08    0.10    0.14    0.17    0.18    0.16    0.16    0.16    0.21    0.21
+                  flat control    1.03    1.05    1.03    1.00    1.15    1.13    1.25    1.12    1.06    1.29    1.21    1.03    1.00
+          sieved null (1 draw)    0.98    0.94    0.95    0.93    0.96    0.85    0.84    0.91    0.76    0.77    0.72    0.55    0.53
+                        primes    0.61    0.61    0.55    0.55    0.49    0.41    0.42    0.46    0.39    0.29    0.27    0.23    0.14
+          primes z vs ensemble    -6.1    -4.9    -5.0    -4.4    -4.7    -3.8    -3.0    -2.6    -3.3    -3.9    -3.8    -3.0    -3.3
+
+  matched-Poisson trend across range: 0.94 -> 0.82 (change -0.11)
+  its spread at the largest L: sd/mean = 0.26
+  -> NOT CONFIRMED. The control does not sag, so the earlier claim of a
+     systematic large-L deflation was wrong. What is real is that the
+     statistic gets noisy at large L, where few independent windows fit;
+     a single sieved-null draw sagging was that noise, not an estimator
+     bias. Only the ensemble z is interpretable out there.
+
+=== thinned vs unthinned rough null ===
+The thinned set matches the primes' density but its thinning rule
+imposes near-regular spacing. The unthinned set has the sieve
+structure with nothing imposed on its counts.
+
+  counts: primes=5,133  thinned=6,928  unthinned=6,928
+
+statistic                             primes    sieved   thinned  unthinned
+modular_grid.reduced_dispersion        0.181     0.820     0.070      0.070
+count_fluctuation.small_L              0.578     0.949     0.406      0.406
+crt_lattice.crt_independence           0.708     1.018     0.547      0.547
+prime_gaps.gap_lag1_corr              -0.072    -0.009    -0.124     -0.124
+ulam.diag_dispersion                   1.547     1.130     1.649      1.649
+ulam.diag_over_row                     1.424     0.983     2.058      2.058
+pair.deep_sieve_ratio                  1.059     0.999     1.064      1.064
+pair.pair_corr_dispersion              1.455     0.468     2.574      2.574
+
+=== sieve-bound sweep (all unthinned, no thinning rule involved) ===
+As the bound rises the rough set converges on the primes by construction:
+past sqrt(N) = 223 the only survivors are primes. Watch whether
+the statistics slide with it.
+
+set            count  density   mod_grid   fluct_sL  ulam_diag  crt_indep   gap_lag1  polar_710      sacks deep_ratio
+/home/user/Ai-Tree/primeviz/reps/modgrid.py:90: RuntimeWarning: Mean of empty slice
+  "reduced_dispersion": float(np.nanmean(red_adm)),
+/home/user/Ai-Tree/primeviz/reps/modgrid.py:91: RuntimeWarning: All-NaN axis encountered
+  "max_reduced_dispersion": float(np.nanmax(red_adm)),
+/home/user/Ai-Tree/primeviz/reps/crt_lattice.py:98: RuntimeWarning: Mean of empty slice
+  "crt_independence": float(np.nanmean(red)),
+/home/user/Ai-Tree/primeviz/reps/crt_lattice.py:99: RuntimeWarning: All-NaN axis encountered
+  "crt_independence_max": float(np.nanmax(red)),
+/home/user/Ai-Tree/primeviz/reps/spirals.py:168: RuntimeWarning: Mean of empty slice
+  out["local_ang_dispersion"] = float(np.nanmean(vals)) if vals else float("nan")
+rough<=7      11,432   0.2286        nan  40026.375        nan        nan     -0.331        nan        nan      1.000
+rough<=13      9,597   0.1919      0.019      0.201      2.704      0.525     -0.209      0.165      1.028      1.036
+rough<=23      8,194   0.1639      0.041      0.308      2.038      0.483     -0.159      0.261      0.995      1.056
+rough<=47      6,928   0.1386      0.070      0.406      1.649      0.547     -0.124      0.410      0.995      1.064
+rough<=97      5,870   0.1174      0.117      0.526      1.381      0.624     -0.091      1.126      0.977      1.060
+rough<=199     5,139   0.1028      0.175      0.579      1.530      0.707     -0.072      1.041      0.985      1.059
+primes         5,133   0.1027      0.181      0.578      1.547      0.708     -0.072      1.037      0.990      1.059
+
+  rough<=7 is degenerate: that set IS the candidate pool, so the (1-rho)
+  correction divides by zero. The row is left in to show why it is unusable.

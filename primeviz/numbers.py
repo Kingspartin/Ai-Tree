@@ -124,7 +124,95 @@ def make_sieved(
     )
 
 
-NULL_FACTORIES = {"cramer": make_cramer, "sieved": make_sieved}
+ROUGH_BOUND = 47
+
+
+def rough_candidates(N: int, bound: int = ROUGH_BOUND) -> np.ndarray:
+    """Mask of integers with no prime factor <= bound (plus those primes)."""
+    m = np.ones(N + 1, dtype=bool)
+    m[:2] = False
+    for p in primes_upto(bound):
+        m[::p] = False
+        if p <= N:
+            m[p] = True  # keep the small primes so the low end stays comparable
+    return m
+
+
+def make_rough(
+    N: int,
+    rng: np.random.Generator | None,
+    target: int,
+    bound: int = ROUGH_BOUND,
+    thin: bool = True,
+) -> IntegerSet:
+    """Integers with no prime factor <= 47, thinned to the primes' density.
+
+    Deterministic: no random numbers are drawn. It knows about divisibility by
+    every prime up to 47, which is what makes it the test for whether a
+    surviving pattern is really just a deeper version of coprimality.
+
+    The thinning target is the smooth curve sum 1/ln n, deliberately **not**
+    pi(x). Locking the running count onto pi(x) would make counts agree with
+    the primes by construction and turn every count-based comparison circular.
+
+    The thinning is nonetheless a greedy running-count match, which pins the
+    member count to that smooth curve within +-1 and therefore makes the set
+    more evenly spread than the primes *by construction*. That is a real hazard
+    for any evenness statistic, which is why `thin=False` exists and is reported
+    alongside: the unthinned set has the same sieve structure with nothing
+    imposed on its counts.
+    """
+    cand = rough_candidates(N, bound)
+    idx = np.flatnonzero(cand)
+    if not thin:
+        m = np.zeros(N + 1, dtype=bool)
+        m[idx] = True
+        return IntegerSet(
+            "rough", f"det: no factor <= {bound} (unthinned)", "null", N, m
+        )
+
+    w = _log_weights(N)
+    cum = np.cumsum(w)
+    cum *= target / cum[-1]  # smooth target count up to each n
+
+    # greedy: keep a candidate whenever the smooth target has moved past the
+    # number kept so far
+    keep = np.zeros(idx.size, dtype=bool)
+    kept = 0
+    tgt = cum[idx]
+    for i in range(idx.size):
+        if tgt[i] > kept:
+            keep[i] = True
+            kept += 1
+    m = np.zeros(N + 1, dtype=bool)
+    m[idx[keep]] = True
+    return IntegerSet("rough", f"det: no factor <= {bound}", "null", N, m)
+
+
+def make_rough_unthinned(N, rng, target, bound: int = ROUGH_BOUND):
+    """The default rough null: sieve structure, no thinning rule.
+
+    Thinning was tried first, to match the primes' density exactly, and it
+    corrupted the control: a greedy running-count match imposes near-regular
+    spacing, which drove `modular_grid.reduced_dispersion` to 2.87 (primes
+    0.18), `gap_lag1_corr` to -0.22 (primes -0.07) and the polar dispersion to
+    0.62 -- distortions in both directions that have nothing to do with the
+    sieve. The unthinned set is ~35% denser than the primes instead, which is a
+    real confound but a legible one: see the sieve-bound sweep in calibrate.py,
+    where raising the bound slides density and every statistic smoothly onto
+    the primes' values.
+    """
+    return make_rough(N, rng, target, bound=bound, thin=False)
+
+
+NULL_FACTORIES = {
+    "cramer": make_cramer,
+    "sieved": make_sieved,
+    "rough": make_rough_unthinned,
+}
+
+# a deterministic null has no ensemble -- one draw is the only draw
+DETERMINISTIC_NULLS = {"rough"}
 
 
 def build_sets(N: int, seed: int) -> dict[str, IntegerSet]:

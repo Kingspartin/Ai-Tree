@@ -31,6 +31,7 @@ Output lands in `out/iteration_NN/`: one PNG per representation, plus
 |---|---|---|
 | `cramer` | each n kept independently with probability ∝ 1/ln n, rescaled to π(N) | density alone |
 | `sieved` | the same, restricted to residues coprime to 2·3·5·7 = 210 | density **and** small-factor avoidance |
+| `rough` | **deterministic**: every integer with no prime factor ≤ 47 | density, deep divisibility, and determinism |
 
 The second one is what makes the harness worth running. Almost every striking
 picture of the primes is a picture of "these integers have no small factors",
@@ -38,12 +39,23 @@ which is the definition of a prime rather than a fact about how they are
 distributed. `sieved` already knows that, so anything that separates from it is
 saying something else.
 
-Verdicts, in increasing order of interest:
+Verdicts name the strictest null the primes still separate from, in increasing
+order of interest:
 
-- **ARTIFACT** — both nulls reproduce it. The encoding is drawing itself.
-- **COPRIMALITY** — separates from `cramer` only. Real, but it is divisibility.
-- **SURVIVES** — separates from both. Owes you a mechanism.
+- **ARTIFACT** — every null reproduces it. The encoding is drawing itself.
+- **COPRIMALITY** — separates from `cramer` only. Real, but it is divisibility by 2,3,5,7.
+- **DEEP-COPRIMALITY** — separates from `sieved` but not from `rough`. Still divisibility, just deeper — and `rough` contains no primality at all.
+- **SURVIVES** — separates from all three. Owes you a mechanism.
 - **INCONCLUSIVE** — the statistic failed or the null spread was degenerate.
+
+`rough` is deterministic, so it has no ensemble and no spread of its own. Its
+z is expressed in units of the `sieved` ensemble's spread — a yardstick, not a
+significance test. And it is denser than the primes (0.139 vs 0.103), which is
+a real confound; the sieve-bound sweep in `calibrate.py` handles it by showing
+every statistic sliding smoothly onto the primes' value as the bound rises.
+
+**What the nulls have found so far: nothing that requires primality.** See
+`RESULTS.md`. Every statistic here is a monotone function of sieve depth.
 
 The critique line also reports the *direction*: a value below the nulls means
 the primes are **more even** than random, which is a different discovery from
@@ -123,7 +135,20 @@ confident, plausible-looking result rather than an obvious failure:
 | Poisson variance where the sampling is binomial | every set at half its pool looked 2× "more ordered" than random |
 | density window saturating at N | tenfold inflation at large scales, with a flat control still reading 1.0 |
 | density window overrunning the ends of the range | a red stripe at low n in the fluctuation map |
+| reading one noisy draw as a trend | a "systematic large-L deflation" that a 12-draw matched-density ensemble showed does not exist |
+| density-matching a deterministic control by running-count | a control that was simultaneously too even (gaps, fluctuation) and too uneven (residues) |
 
-The habit that catches them: build a control whose answer you already know — a
-flat random set on the same pool — and check the statistic returns 1.0 before
-believing anything it says about the primes.
+The habit that catches them: build a control whose answer you already know and
+check the statistic returns 1.0 before believing anything it says about the
+primes. Two refinements learned the hard way — **the control has to match the
+property you are testing** (a flat control cannot expose a density-trend
+artefact, and it is what hid the first bug), and **one draw is not a control**
+(at the widest scales the fluctuation statistic's own sd/mean is 0.26, easily
+enough to fake a trend).
+
+## Independence of evidence
+
+The modular sweep, CRT lattice, fluctuation map and gap correlation are **not**
+independent tests. They are four views of the same two facts: the members avoid
+small residues, and their density is smooth. When they agree, that is not
+corroboration — treat them as one claim.

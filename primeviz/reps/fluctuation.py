@@ -23,11 +23,17 @@ Calibration was not free, and both problems it turned up looked like findings:
   * windows whose density window overran either end of the range carry a
     miscentred estimate, which showed up as a red stripe at low n.
 
-With both fixed a flat control reads 1.00-1.05 at the smallest scales. What
-remains is a mild deflation at large L, present for any set whose density
-varies -- the measurement window is a sixth of the window estimating its own
-expectation, which partly explains the count away. So the absolute scale is
-trustworthy only at the small-L end, and the headline is taken there.
+With both fixed a flat control reads 1.00-1.05 at the smallest scales.
+
+A third claim -- that a residual *systematic* deflation remained at large L --
+was made here and is now retracted. It rested on one draw of the sieved null
+sagging from 0.98 to 0.53. An ensemble of twelve matched-density Poisson draws
+does not sag at all (0.94 -> 0.82, well inside its own spread), so there is no
+estimator bias to correct. What is true is narrower: at the largest L only ~27
+heavily overlapping windows fit, the statistic's own spread there is sd/mean
+~ 0.26, and a single draw wanders. The curve is still informative -- the primes
+sit 3 to 6 sd below the matched-density ensemble at *every* scale, not just the
+small ones -- but only the ensemble z is worth reading at large L.
 """
 from __future__ import annotations
 
@@ -163,13 +169,12 @@ Representation(
         "genuine excursions — a run of the number line that is rich or poor at "
         "several scales at once. The curve below collapses each row to a single "
         "number, and the dashed line is what a randomly sprinkled set gives. "
-        "Two calibration facts, both measured against a flat random set drawn on the "
-        "same candidate pool. (1) That control reads 1.00–1.05 at the smallest "
-        "scales and never trends, but every set with a *varying* density sags at "
-        "large L — the sieved null falls from 0.98 to 0.53 across the range — "
-        "because the measurement window is a sixth of the window estimating its own "
-        "expectation. The downward slope is therefore an artefact of the estimator, "
-        "not a finding; only the gap between the curves is real. (2) The Cramér "
+        "Two calibration facts. (1) A single curve's downward slope at large L is "
+        "mostly noise, not signal and not estimator bias: only ~27 overlapping "
+        "windows fit at the widest scale and the statistic's own spread there is "
+        "sd/mean ≈ 0.26. A twelve-draw matched-density Poisson ensemble does not "
+        "trend (0.94 → 0.82). Read the gap between curves, not the slope of one — "
+        "the primes sit 3–6 sd below that ensemble at every scale. (2) The Cramér "
         "column runs ~1.6× high because that null lives on all integers while the "
         "candidate pool is the integers coprime to 210, so its binomial variance is "
         "mismatched. Read the sieved column: it shares both the support and the "

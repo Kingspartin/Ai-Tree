@@ -12,11 +12,11 @@ import numpy as np
 
 from . import stats as st
 from .context import Context
-from .numbers import build_sets, null_replicates
+from .numbers import DETERMINISTIC_NULLS, build_sets, null_replicates
 from .registry import Representation, selected
 from .theme import INK_2, INK_MUTED, SET_COLORS, VERDICT_COLORS, apply_style
 
-PANEL_ORDER = ["primes", "cramer", "sieved"]
+PANEL_ORDER = ["primes", "cramer", "sieved", "rough"]
 
 
 def _fmt(x: float) -> str:
@@ -32,28 +32,43 @@ def critique(rep: Representation, res: st.StatResult | None) -> tuple[str, str]:
     if res is None:
         return "INCONCLUSIVE", "no statistic defined - eyeball only, assume artifact."
     v = st.verdict(res)
-    zc, zs = res.z_cramer, res.z_sieved
-    ref = zs if np.isfinite(zs) and abs(zs) >= st.Z_BAR else zc
+    zc, zs, zr = res.z_cramer, res.z_sieved, res.z_rough
+    ref = next(
+        (z for z in (zr, zs, zc) if np.isfinite(z) and abs(z) >= st.Z_BAR), float("nan")
+    )
     direction = ""
-    if v in ("SURVIVES", "COPRIMALITY") and np.isfinite(ref):
-        direction = " The real value is BELOW the nulls' " if ref < 0 else " The real value is ABOVE the nulls' "
-        direction += "- more even/less clumped than random." if ref < 0 else "- more clumped than random."
-    h = f"{res.name}={_fmt(res.real)} (Cramer z={_fmt(zc)}, sieved z={_fmt(zs)})"
+    if v not in ("ARTIFACT", "INCONCLUSIVE") and np.isfinite(ref):
+        direction = (
+            " Real is BELOW the null - more even/less clumped."
+            if ref < 0
+            else " Real is ABOVE the null - more clumped."
+        )
+    h = (
+        f"{res.name}={_fmt(res.real)} (z: Cramer {_fmt(zc)}, sieved {_fmt(zs)}, "
+        f"rough {_fmt(zr)})"
+    )
     if v == "ARTIFACT":
         line = (
-            f"ARTIFACT - {h}. Both nulls reproduce it; whatever you can see is the "
+            f"ARTIFACT - {h}. Every null reproduces it; whatever you can see is the "
             f"encoding drawing itself, not the primes."
         )
     elif v == "COPRIMALITY":
         line = (
             f"COPRIMALITY - {h}. Beats random integers but not integers that merely "
-            f"avoid factors 2,3,5,7. This is the definition of a prime showing "
-            f"through, not distributional structure."
+            f"avoid factors 2,3,5,7. The definition of a prime showing through, not "
+            f"distributional structure."
+        )
+    elif v == "DEEP-COPRIMALITY":
+        line = (
+            f"DEEP-COPRIMALITY - {h}. Beats avoidance of 2,3,5,7 but not avoidance of "
+            f"every prime up to 47. Still divisibility, just deeper - and the "
+            f"deterministic rough set has no primality in it at all."
         )
     elif v == "SURVIVES":
         line = (
-            f"SURVIVES - {h}. Neither matched-density randomness nor small-factor "
-            f"avoidance reproduces this. Needs a mechanism."
+            f"SURVIVES - {h}. Not reproduced by matched-density randomness, by "
+            f"small-factor avoidance, or by a deterministic set avoiding every prime "
+            f"up to 47. Needs a mechanism."
         )
     else:
         line = f"INCONCLUSIVE - {h}. Degenerate null spread; statistic needs work."
@@ -81,8 +96,14 @@ def run_iteration(
     )
 
     ensembles = {
-        m: null_replicates(ctx.N, sets["primes"].count, m, ctx.n_rep, ctx.seed)
-        for m in ("cramer", "sieved")
+        m: null_replicates(
+            ctx.N,
+            sets["primes"].count,
+            m,
+            1 if m in DETERMINISTIC_NULLS else ctx.n_rep,
+            ctx.seed,
+        )
+        for m in ("cramer", "sieved", "rough")
     }
 
     reps = selected(iteration_max=iteration_max if iteration_max else iteration, only=only)
@@ -92,9 +113,9 @@ def run_iteration(
     for rep in reps:
         t0 = time.time()
         w, h = rep.panel_size
-        fig = plt.figure(figsize=(w * 3, h + 1.0), layout="constrained")
+        fig = plt.figure(figsize=(w * len(PANEL_ORDER), h + 1.0), layout="constrained")
         fig.get_layout_engine().set(hspace=0.02, wspace=0.02)
-        subs = fig.subfigures(1, 3, wspace=0.015)
+        subs = fig.subfigures(1, len(PANEL_ORDER), wspace=0.015)
         errors = []
         for sf, key in zip(subs, PANEL_ORDER):
             iset = sets[key]
@@ -127,7 +148,7 @@ def run_iteration(
             f"{rep.title}  ·  {rep.question}", fontsize=13, fontweight="bold"
         )
         body = line.split(" - ", 1)[1] if " - " in line else line
-        wrapped = textwrap.fill(body, width=int(w * 3 * 11.5))
+        wrapped = textwrap.fill(body, width=int(w * len(PANEL_ORDER) * 11.5))
         fig.supxlabel(
             f"[{v}]  {wrapped}",
             color=VERDICT_COLORS[v],
@@ -154,7 +175,7 @@ def run_iteration(
                 "verdict": v,
                 "critique": line,
                 "headline": rep.headline,
-                "mechanism": rep.mechanism if v in ("SURVIVES", "COPRIMALITY") else "",
+                "mechanism": rep.mechanism if v not in ("ARTIFACT", "INCONCLUSIVE") else "",
                 "notes": rep.notes,
                 "image": os.path.relpath(path, ctx.out_dir),
                 "errors": errors,
@@ -182,7 +203,8 @@ def write_report(ctx, iteration, out_dir, sets, report, elapsed):
             {"N": ctx.N, "seed": ctx.seed, "n_rep": ctx.n_rep, "reps": report}, f, indent=2
         )
 
-    order = {"SURVIVES": 0, "COPRIMALITY": 1, "INCONCLUSIVE": 2, "ARTIFACT": 3}
+    order = {"SURVIVES": 0, "DEEP-COPRIMALITY": 1, "COPRIMALITY": 2,
+             "INCONCLUSIVE": 3, "ARTIFACT": 4}
     L = [
         f"# Iteration {iteration}",
         "",
@@ -201,15 +223,15 @@ def write_report(ctx, iteration, out_dir, sets, report, elapsed):
         "`COPRIMALITY` = separates from Cramér only, i.e. it is small-factor "
         "avoidance. `ARTIFACT` = both nulls reproduce it.",
         "",
-        "| verdict | representation | headline | real | z vs Cramér | z vs sieved |",
-        "|---|---|---|---|---|---|",
+        "| verdict | representation | headline | real | z vs Cramér | z vs sieved | z vs rough |",
+        "|---|---|---|---|---|---|---|",
     ]
     for r in sorted(report, key=lambda r: (order[r["verdict"]], r["key"])):
         s = r["stats"].get(r["headline"] or "", {})
         L += [
             f"| **{r['verdict']}** | `{r['key']}` | {r['headline'] or '—'} | "
             f"{_fmt(s.get('real', float('nan')))} | {_fmt(s.get('cramer_z', float('nan')))} | "
-            f"{_fmt(s.get('sieved_z', float('nan')))} |"
+            f"{_fmt(s.get('sieved_z', float('nan')))} | {_fmt(s.get('rough_z', float('nan')))} |"
         ]
     L += [""]
     for r in sorted(report, key=lambda r: (order[r["verdict"]], r["key"])):
@@ -228,14 +250,15 @@ def write_report(ctx, iteration, out_dir, sets, report, elapsed):
         if r["mechanism"]:
             L += [f"**Why it happens.** {r['mechanism']}", ""]
         if r["stats"]:
-            L += ["| statistic | real | Cramér mean±sd | z | sieved mean±sd | z |",
-                  "|---|---|---|---|---|---|"]
+            L += ["| statistic | real | Cramér | z | sieved | z | rough | z |",
+                  "|---|---|---|---|---|---|---|---|"]
             for k, s in r["stats"].items():
                 L += [
                     f"| `{k}` | {_fmt(s['real'])} | {_fmt(s.get('cramer_mean'))}±"
                     f"{_fmt(s.get('cramer_sd'))} | {_fmt(s.get('cramer_z'))} | "
                     f"{_fmt(s.get('sieved_mean'))}±{_fmt(s.get('sieved_sd'))} | "
-                    f"{_fmt(s.get('sieved_z'))} |"
+                    f"{_fmt(s.get('sieved_z'))} | {_fmt(s.get('rough_mean'))} | "
+                    f"{_fmt(s.get('rough_z'))} |"
                 ]
             L += [""]
         if r["errors"]:

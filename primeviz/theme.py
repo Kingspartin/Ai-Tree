@@ -32,11 +32,13 @@ BLUE = "#3987e5"
 ORANGE = "#d95926"
 AQUA = "#199e70"
 RED = "#e66767"
+VIOLET = "#9085e9"
 
-SET_COLORS = {"primes": BLUE, "cramer": ORANGE, "sieved": AQUA}
+SET_COLORS = {"primes": BLUE, "cramer": ORANGE, "sieved": AQUA, "rough": VIOLET}
 
 VERDICT_COLORS = {
     "SURVIVES": "#199e70",
+    "DEEP-COPRIMALITY": "#c98500",
     "COPRIMALITY": "#c98500",
     "ARTIFACT": "#e66767",
     "INCONCLUSIVE": INK_MUTED,

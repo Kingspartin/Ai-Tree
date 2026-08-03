@@ -40,49 +40,87 @@ class StatResult:
     real: float
     nulls: dict[str, NullScore] = field(default_factory=dict)
 
+    def z(self, model: str) -> float:
+        return self.nulls.get(model, NullScore("", 0, 0, float("nan"), 0)).z
+
     @property
     def z_cramer(self) -> float:
-        return self.nulls.get("cramer", NullScore("", 0, 0, float("nan"), 0)).z
+        return self.z("cramer")
 
     @property
     def z_sieved(self) -> float:
-        return self.nulls.get("sieved", NullScore("", 0, 0, float("nan"), 0)).z
+        return self.z("sieved")
+
+    @property
+    def z_rough(self) -> float:
+        return self.z("rough")
 
 
 Z_BAR = 3.0
 
+# Nulls in increasing order of what they already know. The verdict is named
+# after the strictest null the real set still separates from.
+LADDER = [
+    ("rough", "SURVIVES"),
+    ("sieved", "DEEP-COPRIMALITY"),
+    ("cramer", "COPRIMALITY"),
+]
+
 
 def verdict(res: StatResult) -> str:
-    zc, zs = res.z_cramer, res.z_sieved
-    if not np.isfinite(res.real) or (not np.isfinite(zc) and not np.isfinite(zs)):
+    if not np.isfinite(res.real):
         return "INCONCLUSIVE"
-    if np.isfinite(zs) and abs(zs) >= Z_BAR:
-        return "SURVIVES"
-    if np.isfinite(zc) and abs(zc) >= Z_BAR:
-        return "COPRIMALITY"
+    zs = [res.z(m) for m, _ in LADDER]
+    if not any(np.isfinite(z) for z in zs):
+        return "INCONCLUSIVE"
+    for (_model, label), z in zip(LADDER, zs):
+        if np.isfinite(z) and abs(z) >= Z_BAR:
+            return label
     return "ARTIFACT"
 
 
-def score(real_vals: dict, null_vals: dict[str, list[dict]]) -> dict[str, StatResult]:
-    """real_vals: {stat: value}; null_vals: {model: [ {stat: value}, ... ]}."""
+def score(
+    real_vals: dict,
+    null_vals: dict[str, list[dict]],
+    sd_reference: str = "sieved",
+) -> dict[str, StatResult]:
+    """real_vals: {stat: value}; null_vals: {model: [ {stat: value}, ... ]}.
+
+    A deterministic null contributes exactly one draw and so has no spread of
+    its own. Rather than drop it, its separation is expressed in units of the
+    `sd_reference` model's ensemble spread: "the real set differs from this
+    fixed set by N times the sampling noise of a comparable random set." That
+    is a yardstick, not a significance test -- there is no sampling
+    distribution here to attach a tail probability to.
+    """
     out: dict[str, StatResult] = {}
     for name, rv in real_vals.items():
         res = StatResult(name=name, real=float(rv))
+        ref_sd = float("nan")
         for model, draws in null_vals.items():
             arr = np.array(
                 [d[name] for d in draws if name in d and np.isfinite(d[name])],
                 dtype=float,
             )
-            if arr.size < 2:
-                res.nulls[model] = NullScore(model, np.nan, np.nan, np.nan, np.nan)
-                continue
-            mu, sd = float(arr.mean()), float(arr.std(ddof=1))
-            z = (res.real - mu) / sd if sd > 0 else (
-                0.0 if np.isclose(res.real, mu) else np.inf * np.sign(res.real - mu)
-            )
             res.nulls[model] = NullScore(
-                model, mu, sd, float(z), float((arr >= res.real).mean())
+                model,
+                float(arr.mean()) if arr.size else float("nan"),
+                float(arr.std(ddof=1)) if arr.size >= 2 else float("nan"),
+                float("nan"),
+                float((arr >= res.real).mean()) if arr.size else float("nan"),
             )
+            if model == sd_reference and arr.size >= 2:
+                ref_sd = res.nulls[model].sd
+        for ns in res.nulls.values():
+            sd = ns.sd if np.isfinite(ns.sd) else ref_sd
+            if not np.isfinite(ns.mean) or not np.isfinite(sd):
+                continue
+            if sd > 0:
+                ns.z = (res.real - ns.mean) / sd
+            elif np.isclose(res.real, ns.mean):
+                ns.z = 0.0
+            else:
+                ns.z = np.inf * np.sign(res.real - ns.mean)
         out[name] = res
     return out
 
