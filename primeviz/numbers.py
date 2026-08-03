@@ -1,0 +1,189 @@
+"""Integer sets: the real primes and the null controls they are tested against.
+
+Two nulls, deliberately:
+
+  cramer  Each n >= 2 is kept independently with probability proportional to
+          1/ln n (Cramer's model), rescaled so the expected count matches
+          pi(N). It has the right *density* and nothing else -- in particular
+          half its members are even. Any representation keyed on divisibility
+          will beat this null trivially.
+
+  sieved  Same 1/ln n weighting, but restricted to residues coprime to the
+          primorial 2*3*5*7 = 210 and renormalised to the same expected count.
+          This null already knows "primes avoid small factors", so structure
+          that survives *it* is not just coprimality showing up in a costume.
+
+A representation that separates from `cramer` but not from `sieved` has found
+small-prime divisibility, which is a property of the definition of a prime, not
+a discovery about their distribution.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from functools import lru_cache
+
+import numpy as np
+
+
+def sieve_mask(N: int) -> np.ndarray:
+    """Boolean mask of length N+1, True at primes."""
+    m = np.ones(N + 1, dtype=bool)
+    m[:2] = False
+    for p in range(2, int(N**0.5) + 1):
+        if m[p]:
+            m[p * p :: p] = False
+    return m
+
+
+@lru_cache(maxsize=8)
+def primes_upto(n: int) -> tuple:
+    return tuple(np.flatnonzero(sieve_mask(n)).tolist())
+
+
+@dataclass
+class IntegerSet:
+    """A subset of [2, N] plus the metadata needed to render and score it."""
+
+    key: str
+    label: str
+    kind: str  # "real" | "null"
+    N: int
+    mask: np.ndarray
+    seed: int | None = None
+    _values: np.ndarray | None = field(default=None, repr=False, compare=False)
+
+    @property
+    def values(self) -> np.ndarray:
+        if self._values is None:
+            self._values = np.flatnonzero(self.mask).astype(np.int64)
+        return self._values
+
+    @property
+    def count(self) -> int:
+        return int(self.mask.sum())
+
+    @property
+    def density(self) -> float:
+        return self.count / (self.N - 1)
+
+
+def _scale_to_target(weights: np.ndarray, target: int) -> np.ndarray:
+    """Scale weights so that sum(min(s*w, 1)) == target, then clip to [0, 1].
+
+    Bisection rather than a plain multiply, because clipping at 1 destroys the
+    expectation for small n where 1/ln n is already large.
+    """
+    lo, hi = 0.0, 1.0
+    while np.minimum(weights * hi, 1.0).sum() < target:
+        hi *= 2.0
+        if hi > 1e9:
+            break
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if np.minimum(weights * mid, 1.0).sum() < target:
+            lo = mid
+        else:
+            hi = mid
+    return np.minimum(weights * hi, 1.0)
+
+
+def _log_weights(N: int) -> np.ndarray:
+    n = np.arange(N + 1, dtype=float)
+    w = np.zeros(N + 1)
+    w[2:] = 1.0 / np.log(n[2:])
+    return w
+
+
+def make_primes(N: int) -> IntegerSet:
+    return IntegerSet("primes", f"primes <= {N:,}", "real", N, sieve_mask(N))
+
+
+def make_cramer(N: int, rng: np.random.Generator, target: int) -> IntegerSet:
+    p = _scale_to_target(_log_weights(N), target)
+    mask = rng.random(N + 1) < p
+    mask[:2] = False
+    return IntegerSet("cramer", "null: Cramer 1/ln n", "null", N, mask)
+
+
+def make_sieved(
+    N: int, rng: np.random.Generator, target: int, primorial_bound: int = 7
+) -> IntegerSet:
+    """Cramer weighting restricted to residues coprime to the primorial."""
+    small = [p for p in primes_upto(primorial_bound)]
+    w = _log_weights(N)
+    for p in small:
+        w[::p] = 0.0
+    p_keep = _scale_to_target(w, target - len(small))
+    mask = rng.random(N + 1) < p_keep
+    mask[:2] = False
+    for p in small:  # keep the small primes themselves so the low end is comparable
+        if p <= N:
+            mask[p] = True
+    return IntegerSet(
+        "sieved", f"null: sieved mod {int(np.prod(small))}", "null", N, mask
+    )
+
+
+NULL_FACTORIES = {"cramer": make_cramer, "sieved": make_sieved}
+
+
+def build_sets(N: int, seed: int) -> dict[str, IntegerSet]:
+    """The three display sets: one real, two nulls, all with matched counts."""
+    real = make_primes(N)
+    rng = np.random.default_rng(seed)
+    out = {"primes": real}
+    for key, fn in NULL_FACTORIES.items():
+        s = fn(N, rng, real.count)
+        s.seed = seed
+        out[key] = s
+    return out
+
+
+def null_replicates(
+    N: int, target: int, model: str, n_rep: int, seed: int
+) -> list[IntegerSet]:
+    """An ensemble of independent draws from one null model, for z-scores."""
+    fn = NULL_FACTORIES[model]
+    out = []
+    for i in range(n_rep):
+        rng = np.random.default_rng((seed + 1) * 100003 + i)
+        s = fn(N, rng, target)
+        s.seed = i
+        out.append(s)
+    return out
+
+
+# --- multiplicative structure -------------------------------------------------
+
+
+@lru_cache(maxsize=4)
+def _basis(n_primes: int) -> tuple:
+    p, cand = [], 2
+    while len(p) < n_primes:
+        if all(cand % q for q in p):
+            p.append(cand)
+        cand += 1
+    return tuple(p)
+
+
+def exponent_vectors(m: np.ndarray, n_primes: int = 20) -> np.ndarray:
+    """Exponent of each of the first `n_primes` primes in each entry of m.
+
+    The smooth part only: anything left over after dividing out the basis is
+    discarded, which is the whole point -- two integers are close here when
+    their small-prime structure agrees.
+    """
+    basis = _basis(n_primes)
+    m = np.asarray(m, dtype=np.int64)
+    out = np.zeros((m.size, n_primes), dtype=np.int16)
+    for j, p in enumerate(basis):
+        t = m.copy()
+        e = np.zeros(m.size, dtype=np.int16)
+        while True:
+            div = (t % p == 0) & (t > 0)
+            if not div.any():
+                break
+            e[div] += 1
+            t[div] //= p
+        out[:, j] = e
+    return out

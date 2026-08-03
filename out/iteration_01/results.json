@@ -1,0 +1,637 @@
+{
+  "N": 100000,
+  "seed": 0,
+  "n_rep": 12,
+  "reps": [
+    {
+      "key": "crt_lattice",
+      "title": "CRT lattice \u2014 joint residues (n mod p, n mod q)",
+      "question": "does knowing n mod p tell you anything about n mod q?",
+      "iteration": 1,
+      "verdict": "SURVIVES",
+      "critique": "SURVIVES - crt_independence=0.592 (Cramer z=-13.289, sieved z=-12.013). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is BELOW the nulls' - more even/less clumped than random.",
+      "headline": "crt_independence",
+      "mechanism": "Any dependence would mean the members are not spread across residue classes mod pq the way they are spread mod p and mod q separately.",
+      "notes": "Grey means the cell holds exactly what independence predicts. A value of \u03c7\u00b2/dof near 1 means the two residues carry no information about each other; the picture being visibly speckled at this sample size is expected \u2014 roughly 10 members per cell \u2014 and is noise, not texture. Compare the reduced statistic with `crt_independence_unreduced` to see how much a naive version of this test would have been driven by the empty row and column alone.",
+      "image": "iteration_01/crt_lattice.png",
+      "errors": [],
+      "stats": {
+        "crt_independence": {
+          "real": 0.5916313339342654,
+          "cramer_mean": 1.5620606059837152,
+          "cramer_sd": 0.07302622360727898,
+          "cramer_z": -13.288777977459608,
+          "sieved_mean": 1.013795063490922,
+          "sieved_sd": 0.035142620233881955,
+          "sieved_z": -12.01287003493374
+        },
+        "crt_independence_max": {
+          "real": 0.7561139637250794,
+          "cramer_mean": 1.6974404288277747,
+          "cramer_sd": 0.08928535398381038,
+          "cramer_z": -10.542898953767724,
+          "sieved_mean": 1.1140810252313396,
+          "sieved_sd": 0.05262147991661513,
+          "sieved_z": -6.802679477534662
+        },
+        "crt_independence_unreduced": {
+          "real": 0.3922811896851838,
+          "cramer_mean": 0.9077626954233177,
+          "cramer_sd": 0.04780171571058525,
+          "cramer_z": -10.783744852572001,
+          "sieved_mean": 0.5857397725551714,
+          "sieved_sd": 0.015902143912604447,
+          "sieved_z": -12.165566098081115
+        },
+        "crt_indep_11_13": {
+          "real": 0.45766645749354595,
+          "cramer_mean": 1.5294918416917216,
+          "cramer_sd": 0.15581731876458615,
+          "cramer_z": -6.87873076430948,
+          "sieved_mean": 0.9504874278046961,
+          "sieved_sd": 0.11623048447544486,
+          "sieved_z": -4.240031972122294
+        },
+        "crt_indep_13_17": {
+          "real": 0.5247294805045696,
+          "cramer_mean": 1.5816498721549024,
+          "cramer_sd": 0.12167301143688945,
+          "cramer_z": -8.686563923820911,
+          "sieved_mean": 1.0568987089157156,
+          "sieved_sd": 0.08302470724421472,
+          "sieved_z": -6.409769405699751
+        }
+      }
+    },
+    {
+      "key": "factor_embed",
+      "title": "Factorisation embedding of n (PCA)",
+      "question": "where does the set sit in the space of small-prime exponent vectors?",
+      "iteration": 1,
+      "verdict": "SURVIVES",
+      "critique": "SURVIVES - frac_at_origin=0.998 (Cramer z=378.490, sieved z=122.190). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is ABOVE the nulls' - more clumped than random.",
+      "headline": "frac_at_origin",
+      "mechanism": "Tautological, and worth stating plainly so it is not mistaken for a finding: the embedding's coordinates are divisibility by the primes up to 71, and a prime above 71 is divisible by none of them, so it maps to the zero vector by definition. `frac_at_origin` \u2248 1 for the primes is a restatement of what a prime is. It separates from the sieved null only because that null is sieved at 7, not at 71 -- a deeper null (integers with no factor below 71) would erase this entirely.",
+      "notes": "Read the axes before the pattern: the coordinates are 'how many times does 2, 3, 5 ... divide n'. Almost every prime is at the origin because none of them do \u2014 the primes panel is one coloured dot. Note the disagreement between eye and statistic here, in the direction people usually assume is impossible: the *picture* cannot tell the primes from the sieved null (both collapse to the origin, since PC1 and PC2 are essentially the exponents of 2 and 3, which both sets have set to zero), while the *statistic* separates them at z = 122. Neither is wrong; they are answering different questions, and the statistic's question happens to be a tautology.",
+      "image": "iteration_01/factor_embed.png",
+      "errors": [],
+      "stats": {
+        "frac_at_origin": {
+          "real": 0.9979149291075896,
+          "cramer_mean": 0.12721290753370107,
+          "cramer_sd": 0.002300462743508832,
+          "cramer_z": 378.489946872963,
+          "sieved_mean": 0.5556513955727176,
+          "sieved_sd": 0.003619466949934355,
+          "sieved_z": 122.19023951659324
+        },
+        "mean_basis_exponent": {
+          "real": 0.002085070892410342,
+          "cramer_mean": 2.510463848433951,
+          "cramer_sd": 0.007564135294269678,
+          "cramer_z": -331.61474245996106,
+          "sieved_mean": 0.5961737157877917,
+          "sieved_sd": 0.004652485695163928,
+          "sieved_z": -127.6927397139367
+        },
+        "mean_v2": {
+          "real": 0.0001042535446205171,
+          "cramer_mean": 0.9961029657742325,
+          "cramer_sd": 0.010360126241724263,
+          "cramer_z": -96.13770035140473,
+          "sieved_mean": 0.00010424718294734242,
+          "sieved_sd": 7.825430808242262e-07,
+          "sieved_z": 0.008129486197706898
+        }
+      }
+    },
+    {
+      "key": "factor_shift",
+      "title": "Factorisation embedding of n\u22121 (PCA + UMAP)",
+      "question": "is the multiplicative shape of p\u22121 unusual for an integer of that size?",
+      "iteration": 1,
+      "verdict": "COPRIMALITY",
+      "critique": "COPRIMALITY - mean_basis_exponent_shift=3.873 (Cramer z=69.600, sieved z=1.396). Beats random integers but not integers that merely avoid factors 2,3,5,7. This is the definition of a prime showing through, not distributional structure. The real value is ABOVE the nulls' - more clumped than random.",
+      "headline": "mean_basis_exponent_shift",
+      "mechanism": "Every prime past 2 is odd, so p\u22121 is always even, and the density of the basis exponents shifts up accordingly. That is parity, not depth: a null whose members are already odd shows the same thing.",
+      "notes": "Both projections are log-scaled density hexbins, not scatter, because 10\u2074 points overplot. PCA is dominated by the 2-adic valuation of n\u22121. Treat the UMAP clusters as furniture, not findings: the exponent vectors are short integer vectors with many exact duplicates, so UMAP separates them into islands of identical points, and it draws the same islands on all three panels. Cluster count and shape here are a function of n_neighbors and of the discreteness of the coordinates, not of which integers went in.",
+      "image": "iteration_01/factor_shift.png",
+      "errors": [],
+      "stats": {
+        "mean_v2_of_shift": {
+          "real": 1.9959336878323428,
+          "cramer_mean": 1.0039328583018803,
+          "cramer_sd": 0.015003178257400818,
+          "cramer_z": 66.11937900831946,
+          "sieved_mean": 1.9981040333527804,
+          "sieved_sd": 0.015022576936341158,
+          "sieved_z": -0.14447225197344876
+        },
+        "mean_basis_exponent_shift": {
+          "real": 3.8730059430716297,
+          "cramer_mean": 2.5088946383684907,
+          "cramer_sd": 0.019599392009343377,
+          "cramer_z": 69.59967452321189,
+          "sieved_mean": 3.847660277955176,
+          "sieved_sd": 0.018149893434261117,
+          "sieved_z": 1.3964635775000882
+        },
+        "frac_shift_div6": {
+          "real": 0.4988009592326139,
+          "cramer_mean": 0.16592293346040812,
+          "cramer_sd": 0.003190193221959138,
+          "cramer_z": 104.34415805315429,
+          "sieved_mean": 0.500652813206515,
+          "sieved_sd": 0.002571839869661979,
+          "sieved_z": -0.72005026275002
+        },
+        "v2_shape_dispersion": {
+          "real": 1076.5457060076578,
+          "cramer_mean": 2.962172779022717,
+          "cramer_sd": 0.9934633069631749,
+          "cramer_z": 1080.647393521128,
+          "sieved_mean": 1078.328059706786,
+          "sieved_sd": 9.075227986255825,
+          "sieved_z": -0.19639767748286918
+        }
+      }
+    },
+    {
+      "key": "modular_grid",
+      "title": "Modular grid sweep, k = 2..60",
+      "question": "beyond avoiding small factors, is the set unevenly spread across residue classes?",
+      "iteration": 1,
+      "verdict": "SURVIVES",
+      "critique": "SURVIVES - reduced_dispersion=0.134 (Cramer z=-8.516, sieved z=-7.331). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is BELOW the nulls' - more even/less clumped than random.",
+      "headline": "reduced_dispersion",
+      "mechanism": "Two separate things live in this picture. The dark columns are trivial: a class j mod k with gcd(j,k) = d > 1 contains only multiples of d, so it holds no primes past d itself. The headline number is not that \u2014 it is the spread across the classes that are allowed, and for the primes it comes out far *below* random. The primes' counts in the reduced classes mod k sit within a few units of dead level where a random set of the same size would scatter by \u00b1\u221acount. The reason is that the primes are one fixed set, not a sample: their counting error in each progression is a single slowly-growing quantity of order \u221aN, shared out over the \u03c6(k) classes, instead of independent per-class sampling noise of order \u221a(count) each. At N=10\u2075 that is roughly a threefold smaller deviation, i.e. an order of magnitude in \u03c7\u00b2.",
+      "notes": "In the sweep, black = a residue class the set never occupies, grey = exactly the expected share, red = enriched. The banded triangle is the divisibility pattern. The headline statistic throws that pattern away: it looks only at classes coprime to k, counts candidates from the integers coprime to 210, and applies the binomial (1\u2212\u03c1) correction \u2014 so 1.0 means 'no better spread than a random choice of that many candidates', and anything well below 1 means the set is *more* even than random.",
+      "image": "iteration_01/modular_grid.png",
+      "errors": [],
+      "stats": {
+        "reduced_dispersion": {
+          "real": 0.1339460551711246,
+          "cramer_mean": 1.1099777682975127,
+          "cramer_sd": 0.1146177974124362,
+          "cramer_z": -8.515533670694035,
+          "sieved_mean": 0.8638051986455193,
+          "sieved_sd": 0.09956301582877775,
+          "sieved_z": -7.33062510610929
+        },
+        "max_reduced_dispersion": {
+          "real": 0.3752681098123859,
+          "cramer_mean": 2.4991502967403294,
+          "cramer_sd": 0.5081415514988328,
+          "cramer_z": -4.1797057939136515,
+          "sieved_mean": 1.8150910087286274,
+          "sieved_sd": 0.5592487821987014,
+          "sieved_z": -2.57456599772205
+        },
+        "reduced_dispersion_allint_pool": {
+          "real": 0.07718633672920203,
+          "cramer_mean": 0.7989631789555759,
+          "cramer_sd": 0.08513262123140591,
+          "cramer_z": -8.478264051854499,
+          "sieved_mean": 0.5009748904501493,
+          "sieved_sd": 0.05694712392659036,
+          "sieved_z": -7.441790287201271
+        },
+        "all_class_dispersion": {
+          "real": 455.4931229980387,
+          "cramer_mean": 0.8292260838346239,
+          "cramer_sd": 0.05034322431446922,
+          "cramer_z": 9031.282821182522,
+          "sieved_mean": 443.4728064434458,
+          "sieved_sd": 3.358425034022101,
+          "sieved_z": 3.579152856717839
+        },
+        "reduced_dispersion_k12": {
+          "real": 0.1510906616473672,
+          "cramer_mean": 0.8740616760275292,
+          "cramer_sd": 0.4358918827770569,
+          "cramer_z": -1.6586016921768092,
+          "sieved_mean": 0.7231931286945423,
+          "sieved_sd": 0.547976584625315,
+          "sieved_z": -1.044027214116013
+        },
+        "reduced_dispersion_k30": {
+          "real": 0.05603182171903824,
+          "cramer_mean": 0.7013499956737732,
+          "cramer_sd": 0.41525505500085613,
+          "cramer_z": -1.554028460781542,
+          "sieved_mean": 0.7599312306711257,
+          "sieved_sd": 0.33617300419116924,
+          "sieved_z": -2.09386060206014
+        },
+        "reduced_dispersion_k47": {
+          "real": 0.275857552403774,
+          "cramer_mean": 1.6524719670388637,
+          "cramer_sd": 0.22103959176995255,
+          "cramer_z": -6.227908781463024,
+          "sieved_mean": 0.9388713617345267,
+          "sieved_sd": 0.13782672245541472,
+          "sieved_z": -4.810488107959105
+        }
+      }
+    },
+    {
+      "key": "modular_walk",
+      "title": "Centred modular walk",
+      "question": "do the members drift persistently toward some reduced classes as n grows?",
+      "iteration": 1,
+      "verdict": "SURVIVES",
+      "critique": "SURVIVES - walk_drift_mean=0.217 (Cramer z=-2.760, sieved z=-6.555). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is BELOW the nulls' - more even/less clumped than random.",
+      "headline": "walk_drift_mean",
+      "mechanism": "A drift *above* 1 would be a bias among the classes coprime to k \u2014 the set preferring some reduced residues by an amount that does not wash out as n grows. A drift well *below* 1, which is what the primes give, is the opposite: the walk keeps returning to the origin because the residues are spread more evenly than chance would spread them. It is the same hyper-evenness the modular sweep measures, seen as a path instead of a histogram.",
+      "notes": "The dashed circle is the distance an ordinary random walk of that many steps would typically reach, so it is the drift = 1 contour and every panel is readable on its own terms despite the differing axis scales. A path that fills its circle and ends near the rim is equidistribution; one that sets off in a straight line past it is a persistent bias; one that stays huddled well inside \u2014 which is what the primes do \u2014 is a set spread *more* evenly than chance.",
+      "image": "iteration_01/modular_walk.png",
+      "errors": [],
+      "stats": {
+        "drift_k8": {
+          "real": 0.24163298642391431,
+          "cramer_mean": 0.7561281836469891,
+          "cramer_sd": 0.2943856628658232,
+          "cramer_z": -1.747691080518328,
+          "sieved_mean": 0.8058801770031869,
+          "sieved_sd": 0.44601542263972943,
+          "sieved_z": -1.265084483491158
+        },
+        "drift_k9": {
+          "real": 0.19341452696838157,
+          "cramer_mean": 0.8119772716101735,
+          "cramer_sd": 0.5849455436478577,
+          "cramer_z": -1.0574706506597,
+          "sieved_mean": 0.8813640727601356,
+          "sieved_sd": 0.4467470529910553,
+          "sieved_z": -1.53990841391298
+        },
+        "drift_k11": {
+          "real": 0.23538756237111497,
+          "cramer_mean": 0.8494730454999827,
+          "cramer_sd": 0.39459369509078945,
+          "cramer_z": -1.5562475801534967,
+          "sieved_mean": 0.8704404421677309,
+          "sieved_sd": 0.4267383718000379,
+          "sieved_z": -1.4881550893065474
+        },
+        "drift_k13": {
+          "real": 0.24207238645252488,
+          "cramer_mean": 1.061331432439591,
+          "cramer_sd": 0.521656531168888,
+          "cramer_z": -1.57049513815409,
+          "sieved_mean": 0.7889714377016328,
+          "sieved_sd": 0.3445860887498946,
+          "sieved_z": -1.587118775552355
+        },
+        "drift_k16": {
+          "real": 0.10245611895391905,
+          "cramer_mean": 0.7930351362053414,
+          "cramer_sd": 0.5439842750522241,
+          "cramer_z": -1.2694834187718471,
+          "sieved_mean": 0.8141331967986659,
+          "sieved_sd": 0.4996997923317076,
+          "sieved_z": -1.424209272779377
+        },
+        "drift_k25": {
+          "real": 0.1520298700797175,
+          "cramer_mean": 1.2354656358053286,
+          "cramer_sd": 0.7165241967983252,
+          "cramer_z": -1.5120714283854921,
+          "sieved_mean": 0.9839108824880984,
+          "sieved_sd": 0.5472889068864494,
+          "sieved_z": -1.5200034240434153
+        },
+        "drift_k29": {
+          "real": 0.34917542443346766,
+          "cramer_mean": 0.9404827069195473,
+          "cramer_sd": 0.5466446244936048,
+          "cramer_z": -1.081703278494413,
+          "sieved_mean": 0.8146008549428362,
+          "sieved_sd": 0.3785854755417285,
+          "sieved_z": -1.2293800490982343
+        },
+        "walk_drift_mean": {
+          "real": 0.2165955536690057,
+          "cramer_mean": 0.9211276303038507,
+          "cramer_sd": 0.2552859111267852,
+          "cramer_z": -2.7597765717863925,
+          "sieved_mean": 0.8513287234088981,
+          "sieved_sd": 0.09683608439175907,
+          "sieved_z": -6.55471742508735
+        },
+        "walk_drift_max": {
+          "real": 0.34917542443346766,
+          "cramer_mean": 1.6773238133748853,
+          "cramer_sd": 0.5254283876220549,
+          "cramer_z": -2.5277438757206356,
+          "sieved_mean": 1.5162531252466307,
+          "sieved_sd": 0.26723566790530845,
+          "sieved_z": -4.367222796122792
+        }
+      }
+    },
+    {
+      "key": "polar_radian",
+      "title": "Polar plot, r=n and \u03b8=n radians",
+      "question": "are the visible spiral arms a property of the primes or of 2\u03c0?",
+      "iteration": 1,
+      "verdict": "SURVIVES",
+      "critique": "SURVIVES - ang_dispersion_710=1.286 (Cramer z=2.809, sieved z=3.549). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is ABOVE the nulls' - more clumped than random.",
+      "headline": "ang_dispersion_710",
+      "mechanism": "The spokes themselves are nothing about the primes: with 2\u03c0 \u2248 44/7 \u2248 710/113, integers one apart land at angles that nearly repeat after 44 or 710 steps, so *any* set of integers is drawn onto them. The picture is of the continued-fraction expansion of 2\u03c0, and the statistic agrees \u2014 at 6, 44 and 100 bins the primes match the sieved null within z\u22481. The one bin count that does separate, 710, separates for a reason that is still not about distribution: 710 = 2\u00b75\u00b771, and because 113/710 \u2248 1/2\u03c0 the bin index is essentially n mod 710, so ten of the 710 bins are the classes divisible by 71. The primes vacate those ten bins; the sieved null, which only knows about factors up to 7, does not. That accounts for an excess of about 0.3 in \u03c7\u00b2/dof, which is the whole of the observed gap. It is a measurement of the null's sieve bound, not of the primes.",
+      "notes": "Arm counts 6, 44 and 710 are the denominators you get when you approximate 2\u03c0 by a fraction; 100 is a non-resonant control. Dispersion is measured against the number of candidate integers per angular bin, so a set that is simply 'some integers' scores ~1 no matter how striking the picture looks. The `_allint` variants use all integers as candidates: at 710 bins they read \u224821 for the primes and \u224821 for the sieved null alike, a twentyfold 'signal' that is entirely the even bins being empty. Instructive as a demonstration of how easily a statistic can be manufactured out of nothing.",
+      "image": "iteration_01/polar_radian.png",
+      "errors": [],
+      "stats": {
+        "ang_dispersion_allint_6": {
+          "real": 0.5968920659359317,
+          "cramer_mean": 0.9853731267040495,
+          "cramer_sd": 0.554173688649021,
+          "cramer_z": -0.7010095728564217,
+          "sieved_mean": 0.4494735334191052,
+          "sieved_sd": 0.23765300411764723,
+          "sieved_z": 0.6203099896176728
+        },
+        "ang_dispersion_6": {
+          "real": 0.6989831325454361,
+          "cramer_mean": 1.6101584306422183,
+          "cramer_sd": 0.6230008571018252,
+          "cramer_z": -1.4625586589648254,
+          "sieved_mean": 0.7148110779839181,
+          "sieved_sd": 0.45266282224746707,
+          "sieved_z": -0.03496630308602851
+        },
+        "ang_dispersion_allint_44": {
+          "real": 2.092606034695067,
+          "cramer_mean": 0.8044400531260912,
+          "cramer_sd": 0.19569679117292874,
+          "cramer_z": 6.5824583727112795,
+          "sieved_mean": 1.732613589689153,
+          "sieved_sd": 0.260137022923056,
+          "sieved_z": 1.3838570187389023
+        },
+        "ang_dispersion_44": {
+          "real": 1.1587390720325932,
+          "cramer_mean": 2.898650993836098,
+          "cramer_sd": 0.3093216632243126,
+          "cramer_z": -5.624927474095995,
+          "sieved_mean": 1.0327910550573458,
+          "sieved_sd": 0.1754483137448925,
+          "sieved_z": 0.7178639354629527
+        },
+        "ang_dispersion_allint_100": {
+          "real": 2.9835893070699053,
+          "cramer_mean": 0.8440289356699692,
+          "cramer_sd": 0.11971478812414929,
+          "cramer_z": 17.872147668015096,
+          "sieved_mean": 3.2468216690720144,
+          "sieved_sd": 0.20839901064076646,
+          "sieved_z": -1.2631171385734796
+        },
+        "ang_dispersion_100": {
+          "real": 1.183902763202268,
+          "cramer_mean": 6.004969173183336,
+          "cramer_sd": 0.5789656475218095,
+          "cramer_z": -8.327033616963362,
+          "sieved_mean": 1.027026780665232,
+          "sieved_sd": 0.13964417316585692,
+          "sieved_z": 1.1233979834641057
+        },
+        "ang_dispersion_allint_710": {
+          "real": 20.999065390158286,
+          "cramer_mean": 0.9084375791577188,
+          "cramer_sd": 0.04086419488883551,
+          "cramer_z": 491.64379392898593,
+          "sieved_mean": 20.82979079955353,
+          "sieved_sd": 0.16865364530262777,
+          "sieved_z": 1.0036817781259084
+        },
+        "ang_dispersion_710": {
+          "real": 1.2855466308884658,
+          "cramer_mean": 1.112157693291483,
+          "cramer_sd": 0.061733911048079786,
+          "cramer_z": 2.8086498109919447,
+          "sieved_mean": 0.9847626588595841,
+          "sieved_sd": 0.08474772384352372,
+          "sieved_z": 3.549168737372137
+        }
+      }
+    },
+    {
+      "key": "prime_gaps",
+      "title": "Gap series, gap histogram, gap-pair map",
+      "question": "is the spacing sequence anything other than a memoryless point process?",
+      "iteration": 1,
+      "verdict": "SURVIVES",
+      "critique": "SURVIVES - gap_lag1_corr=-0.070 (Cramer z=-9.928, sieved z=-4.863). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is BELOW the nulls' - more even/less clumped than random.",
+      "headline": "gap_lag1_corr",
+      "mechanism": "Consecutive members that are all odd force every gap even, and members avoiding 3 as well push gaps toward multiples of 6 -- both are consequences of small-factor avoidance, and a null with the same avoidance shows the same spikes. Any lag-1 correlation beyond that would be genuine memory.",
+      "notes": "The third panel divides the observed (g\u2096, g\u2096\u208a\u2081) table by what it would be if consecutive gaps were independent, so grey is 'no memory' and any coloured cell is a gap pair that happens more or less often than chance. The histogram's spikes at multiples of 6 are the thing to be suspicious of.",
+      "image": "iteration_01/prime_gaps.png",
+      "errors": [],
+      "stats": {
+        "gap_var_ratio": {
+          "real": 0.5923344886202493,
+          "cramer_mean": 0.927352415914172,
+          "cramer_sd": 0.024382514241829592,
+          "cramer_z": -13.740089474414427,
+          "sieved_mean": 0.654327488041449,
+          "sieved_sd": 0.007917015386138048,
+          "sieved_z": -7.830349746413739
+        },
+        "gap_lag1_corr": {
+          "real": -0.06996390271927133,
+          "cramer_mean": 0.012812080703426413,
+          "cramer_sd": 0.008337881759968151,
+          "cramer_z": -9.927699361260064,
+          "sieved_mean": -0.017173216192918672,
+          "sieved_sd": 0.010854918149869414,
+          "sieved_z": -4.863296599522285
+        },
+        "frac_gap_div6": {
+          "real": 0.40162652486706285,
+          "cramer_mean": 0.125251690064523,
+          "cramer_sd": 0.004412628767899893,
+          "cramer_z": 62.632695687671735,
+          "sieved_mean": 0.4055398373012031,
+          "sieved_sd": 0.0031869826651101975,
+          "sieved_z": -1.2279051520993804
+        },
+        "frac_gap_even": {
+          "real": 0.9998957355854446,
+          "cramer_mean": 0.4747770675830501,
+          "cramer_sd": 0.006342161419465136,
+          "cramer_z": 82.79806098764988,
+          "sieved_mean": 0.999895741947883,
+          "sieved_sd": 7.827058710885275e-07,
+          "sieved_z": -0.00812877300268342
+        },
+        "max_gap_over_mean": {
+          "real": 6.9062796907659845,
+          "cramer_mean": 10.140204956935996,
+          "cramer_sd": 1.4764695400648873,
+          "cramer_z": -2.190309504135038,
+          "sieved_mean": 7.7220478763009694,
+          "sieved_sd": 0.5987013790708512,
+          "sieved_z": -1.3625627300224505
+        }
+      }
+    },
+    {
+      "key": "sacks_spiral",
+      "title": "Sacks square-root spiral",
+      "question": "does the set concentrate on particular \u221an phase angles (i.e. quadratics)?",
+      "iteration": 1,
+      "verdict": "COPRIMALITY",
+      "critique": "COPRIMALITY - local_ang_dispersion=1.034 (Cramer z=-6.753, sieved z=1.737). Beats random integers but not integers that merely avoid factors 2,3,5,7. This is the definition of a prime showing through, not distributional structure. The real value is BELOW the nulls' - more even/less clumped than random.",
+      "headline": "local_ang_dispersion",
+      "mechanism": "frac(\u221an) is almost constant along k\u00b2+bk+c, so each quadratic progression is roughly one angular bin. Progressions that are identically even, or identically divisible by 3, hold no primes and the rest absorb the density \u2014 that is what the eye reads as rays, and the sieved null draws the same ones.",
+      "notes": "Angle is 2\u03c0\u00b7frac(\u221an), so a quadratic n = k\u00b2+bk+c sits at a *nearly* fixed angle \u2014 it drifts by O(1/k), which is why the global binning is nearly blind and the headline uses thin radial annuli instead. Candidates are the integers coprime to 210, so a ray that exists only because its progression is all-even does not count.",
+      "image": "iteration_01/sacks_spiral.png",
+      "errors": [],
+      "stats": {
+        "ang_dispersion_allint_360": {
+          "real": 0.9727993202935881,
+          "cramer_mean": 0.9175029298189359,
+          "cramer_sd": 0.08524924000674111,
+          "cramer_z": 0.6486437940124697,
+          "sieved_mean": 0.8429151319652589,
+          "sieved_sd": 0.07550219517794649,
+          "sieved_z": 1.7202703579970502
+        },
+        "ang_dispersion_360": {
+          "real": 1.1858668599567352,
+          "cramer_mean": 2.007165354101776,
+          "cramer_sd": 0.16084481907590906,
+          "cramer_z": -5.106154483952867,
+          "sieved_mean": 0.9971052201600478,
+          "sieved_sd": 0.07407760114336039,
+          "sieved_z": 2.548160805469148
+        },
+        "ang_dispersion_allint_720": {
+          "real": 1.0537004399406664,
+          "cramer_mean": 0.9025158888485217,
+          "cramer_sd": 0.0448826307761045,
+          "cramer_z": 3.368442278847774,
+          "sieved_mean": 0.8990247235742453,
+          "sieved_sd": 0.05085224236527668,
+          "sieved_z": 3.041669534557987
+        },
+        "ang_dispersion_720": {
+          "real": 1.281985188729442,
+          "cramer_mean": 2.102532486745115,
+          "cramer_sd": 0.10535405637032005,
+          "cramer_z": -7.788473707471167,
+          "sieved_mean": 0.9963438875636261,
+          "sieved_sd": 0.05263927043763251,
+          "sieved_z": 5.426391718408148
+        },
+        "local_ang_dispersion": {
+          "real": 1.033565921541426,
+          "cramer_mean": 1.9641637020769316,
+          "cramer_sd": 0.13780830370604852,
+          "cramer_z": -6.752842575586111,
+          "sieved_mean": 0.9685698653524032,
+          "sieved_sd": 0.03741430685029175,
+          "sieved_z": 1.7371979240212996
+        }
+      }
+    },
+    {
+      "key": "ulam_spiral",
+      "title": "Ulam square spiral",
+      "question": "do the set's members line up on the spiral's diagonals?",
+      "iteration": 1,
+      "verdict": "SURVIVES",
+      "critique": "SURVIVES - diag_dispersion=1.674 (Cramer z=-11.413, sieved z=6.107). Neither matched-density randomness nor small-factor avoidance reproduces this. Needs a mechanism. The real value is ABOVE the nulls' - more clumped than random.",
+      "headline": "diag_dispersion",
+      "mechanism": "Along any diagonal of this spiral n advances by 4k+const, so n mod 2 \u2014 and for half of them n mod 3 \u2014 is fixed. Every diagonal whose fixed residue shares a factor with 2 or 3 is empty of primes and the rest absorb the density, which is the whole of the naive statistic. Once candidates are restricted to integers coprime to 210 that mechanism is spent, and what is left is the same hyper-evenness seen in the modular sweep rather than a preference for particular quadratics.",
+      "notes": "Diagonals of the square spiral are values of quadratics 4k\u00b2+bk+c; rows and columns are not, and act as an internal control \u2014 `diag_over_row` is the ratio. The headline counts candidates from the integers coprime to 210 and applies the (1\u2212\u03c1) correction, so the diagonals that are empty *because they are all even* no longer contribute; `diag_dispersion_allint` is the naive version that lets them count, and the gap between the two is how much of the famous diagonal effect is just parity.",
+      "image": "iteration_01/ulam_spiral.png",
+      "errors": [],
+      "stats": {
+        "diag_dispersion_allint": {
+          "real": 19.358492292826334,
+          "cramer_mean": 0.9437357823211006,
+          "cramer_sd": 0.038442535104583286,
+          "cramer_z": 479.02034713391595,
+          "sieved_mean": 18.899054101773146,
+          "sieved_sd": 0.1214318932780361,
+          "sieved_z": 3.783505129095179
+        },
+        "diag_dispersion": {
+          "real": 1.6741146639678308,
+          "cramer_mean": 4.176608414439696,
+          "cramer_sd": 0.21927505399917593,
+          "cramer_z": -11.412578425274358,
+          "sieved_mean": 1.1646876770351131,
+          "sieved_sd": 0.08342297155646913,
+          "sieved_z": 6.106555274021686
+        },
+        "anti_dispersion_allint": {
+          "real": 17.456687953382005,
+          "cramer_mean": 0.9204203673913872,
+          "cramer_sd": 0.06193782112606517,
+          "cramer_z": 266.98174532703564,
+          "sieved_mean": 17.02544441260012,
+          "sieved_sd": 0.11035086358421006,
+          "sieved_z": 3.907930819705803
+        },
+        "anti_dispersion": {
+          "real": 1.6274227008325381,
+          "cramer_mean": 1.9724782786504784,
+          "cramer_sd": 0.1728610927997679,
+          "cramer_z": -1.9961436794665661,
+          "sieved_mean": 1.1262297074167158,
+          "sieved_sd": 0.08256469699847464,
+          "sieved_z": 6.07030621604633
+        },
+        "row_dispersion_allint": {
+          "real": 2.402429696287964,
+          "cramer_mean": 1.0512402243733112,
+          "cramer_sd": 0.06273489679763809,
+          "cramer_z": 21.538083919594868,
+          "sieved_mean": 2.3384559266299747,
+          "sieved_sd": 0.1294681844122685,
+          "sieved_z": 0.494127340615792
+        },
+        "row_dispersion": {
+          "real": 1.079004558892587,
+          "cramer_mean": 5.790866872338278,
+          "cramer_sd": 0.4321612924740792,
+          "cramer_z": -10.903017913683945,
+          "sieved_mean": 1.213129848445859,
+          "sieved_sd": 0.10471172728101612,
+          "sieved_z": -1.2809003636557195
+        },
+        "col_dispersion_allint": {
+          "real": 2.334608173978253,
+          "cramer_mean": 1.0185215103064653,
+          "cramer_sd": 0.08033793451419152,
+          "cramer_z": 16.381883248931473,
+          "sieved_mean": 2.5295700606105442,
+          "sieved_sd": 0.13145270847420837,
+          "sieved_z": -1.4831332796048378
+        },
+        "col_dispersion": {
+          "real": 1.098864403407929,
+          "cramer_mean": 6.119639546066266,
+          "cramer_sd": 0.43443174623231195,
+          "cramer_z": -11.557109226482455,
+          "sieved_mean": 1.2481561314933252,
+          "sieved_sd": 0.12315322518329674,
+          "sieved_z": -1.2122437545845504
+        },
+        "diag_over_row": {
+          "real": 1.5515362286198515,
+          "cramer_mean": 0.7235411488370214,
+          "cramer_sd": 0.04695796813380272,
+          "cramer_z": 17.632685413975512,
+          "sieved_mean": 0.9656085406892791,
+          "sieved_sd": 0.09630571453998309,
+          "sieved_z": 6.084038633941226
+        }
+      }
+    }
+  ]
+}
