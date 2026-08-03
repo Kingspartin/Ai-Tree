@@ -1,0 +1,1301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prime Line — a flat plot of the primes</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ground:   #ECEFF3;
+    --panel:    #FFFFFF;
+    --panel-2:  #F4F6F9;
+    --line:     #D2D9E3;
+    --line-2:   #E3E8EF;
+    --ink:      #0F141D;
+    --ink-2:    #46505F;
+    --muted:    #6B7686;
+    --accent:   #0D6D7B;
+    --accent-2: #0A5460;
+    --spark:    #B4691A;
+    --guide:    rgba(15, 20, 29, 0.10);
+    --shadow:   0 1px 2px rgba(15,20,29,.06), 0 8px 28px rgba(15,20,29,.10);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --ground:   #070A11;
+      --panel:    #0D131F;
+      --panel-2:  #121A28;
+      --line:     #1D2637;
+      --line-2:   #161E2C;
+      --ink:      #E4E9F2;
+      --ink-2:    #AAB6C8;
+      --muted:    #77839A;
+      --accent:   #3FBECF;
+      --accent-2: #6FD9E6;
+      --spark:    #F2B45C;
+      --guide:    rgba(228, 233, 242, 0.10);
+      --shadow:   0 1px 2px rgba(0,0,0,.5), 0 10px 34px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground:   #070A11;
+    --panel:    #0D131F;
+    --panel-2:  #121A28;
+    --line:     #1D2637;
+    --line-2:   #161E2C;
+    --ink:      #E4E9F2;
+    --ink-2:    #AAB6C8;
+    --muted:    #77839A;
+    --accent:   #3FBECF;
+    --accent-2: #6FD9E6;
+    --spark:    #F2B45C;
+    --guide:    rgba(228, 233, 242, 0.10);
+    --shadow:   0 1px 2px rgba(0,0,0,.5), 0 10px 34px rgba(0,0,0,.45);
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --ground:   #ECEFF3;
+    --panel:    #FFFFFF;
+    --panel-2:  #F4F6F9;
+    --line:     #D2D9E3;
+    --line-2:   #E3E8EF;
+    --ink:      #0F141D;
+    --ink-2:    #46505F;
+    --muted:    #6B7686;
+    --accent:   #0D6D7B;
+    --accent-2: #0A5460;
+    --spark:    #B4691A;
+    --guide:    rgba(15, 20, 29, 0.10);
+    --shadow:   0 1px 2px rgba(15,20,29,.06), 0 8px 28px rgba(15,20,29,.10);
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  .app { display: grid; grid-template-columns: 296px 1fr; height: 100dvh; }
+
+  /* ---------- instrument rail ---------- */
+  .rail {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+  }
+  .masthead { padding: 20px 18px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start; }
+  .masthead h1 {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+  .masthead p { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; letter-spacing: .01em; }
+  .masthead .grow { flex: 1; min-width: 0; }
+
+  .sect { padding: 16px 18px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 11px; }
+  .sect > h2 {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  button {
+    font: inherit;
+    color: var(--ink-2);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 9px;
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.2;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  button:hover { border-color: var(--accent); color: var(--ink); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .modes button { font-size: 11px; letter-spacing: .01em; }
+  .modes button .idx { color: var(--muted); margin-right: 6px; font-size: 10px; }
+  .modes button[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--panel);
+  }
+  .modes button[aria-pressed="true"]:hover { color: var(--panel); }
+  .modes button[aria-pressed="true"] .idx { color: color-mix(in srgb, var(--panel) 72%, var(--accent)); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field .lab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field .lab span:first-child { color: var(--ink-2); font-size: 11px; letter-spacing: .02em; }
+  .field .val { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 11px; }
+  .field .hint { color: var(--muted); font-size: 10px; line-height: 1.4; }
+  .field.off { opacity: .35; pointer-events: none; }
+
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; cursor: pointer; margin: 0; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: var(--line); border-radius: 2px; }
+  input[type="range"]::-moz-range-track { height: 2px; background: var(--line); border-radius: 2px; }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--accent); border: none; margin-top: -5px;
+  }
+  input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border: none; border-radius: 50%; background: var(--accent); }
+  input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+  .toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+  .toggles button { padding: 6px 9px; font-size: 11px; }
+  .toggles button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 26%, var(--panel)); border-color: var(--accent); color: var(--ink); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .actions button { text-align: center; font-size: 11px; }
+  .actions .wide { grid-column: 1 / -1; }
+
+  .keys { padding: 14px 18px 22px; color: var(--muted); font-size: 10px; line-height: 1.7; }
+  .keys b { color: var(--ink-2); font-weight: 600; }
+
+  /* ---------- stage ---------- */
+  .stage { position: relative; overflow: hidden; background: var(--ground); }
+  canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+  #plot { cursor: crosshair; }
+  #head { pointer-events: none; }
+
+  .plate {
+    position: absolute;
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(8px);
+  }
+
+  .formula { top: 16px; left: 16px; padding: 10px 14px; display: flex; align-items: baseline; gap: 12px; max-width: min(560px, calc(100% - 32px)); }
+  .formula .name { font-family: var(--serif); font-size: 15px; letter-spacing: -0.005em; }
+  .formula .eq { color: var(--accent); font-size: 12px; white-space: nowrap; overflow-x: auto; }
+
+  .note {
+    left: 16px; bottom: 16px; width: min(430px, calc(100% - 32px));
+    padding: 0;
+  }
+  .note > button {
+    width: 100%; background: none; border: none; border-radius: 3px; padding: 11px 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 700;
+  }
+  .note > button:hover { color: var(--ink); }
+  .note > button .chev { font-size: 11px; letter-spacing: 0; }
+  .note .body { padding: 0 16px 15px; }
+  .note[data-open="false"] .body { display: none; }
+  .note p { margin: 0; font-family: var(--serif); font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+  .note p + p { margin-top: 8px; }
+  .note b { color: var(--ink); font-weight: 600; }
+  .note code { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+
+  .readout { position: absolute; right: 16px; top: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; max-width: 210px; }
+
+  .stats { position: static; padding: 11px 14px; display: grid; grid-template-columns: auto auto; gap: 3px 18px; font-size: 11px; }
+  .stats dt { color: var(--muted); letter-spacing: .02em; white-space: nowrap; }
+  .stats dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .stats dd.hi { color: var(--spark); }
+
+  .legend { position: static; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .legend[hidden] { display: none; }
+  .legend .lt { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .legend .bar { height: 8px; border-radius: 2px; border: 1px solid var(--line); }
+  .legend .ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .legend .swatches { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 8px; }
+  .legend .sw { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .legend .sw i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+
+  .tip {
+    position: absolute; pointer-events: none; padding: 7px 9px; font-size: 11px;
+    line-height: 1.5; white-space: nowrap; opacity: 0; transition: opacity .1s;
+    font-variant-numeric: tabular-nums; z-index: 5;
+  }
+  .tip.on { opacity: 1; }
+  .tip b { color: var(--accent); font-weight: 600; }
+  .tip span { color: var(--muted); }
+
+  .busy { left: 50%; top: 16px; transform: translateX(-50%); padding: 7px 12px; font-size: 11px; color: var(--muted); letter-spacing: .04em; opacity: 0; transition: opacity .15s; }
+  .busy.on { opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { grid-template-columns: 1fr; height: auto; }
+    .stage { height: 62dvh; order: -1; border-bottom: 1px solid var(--line); }
+    .rail { border-right: none; overflow: visible; }
+    .note { left: 10px; right: 10px; bottom: 10px; width: auto; max-height: 46dvh; overflow-y: auto; }
+    .readout { right: 10px; top: 10px; max-width: 210px; }
+    .stats { font-size: 10px; gap: 2px 12px; padding: 8px 10px; }
+    .legend { display: none; }
+    .formula { top: 12px; left: 12px; }
+    .formula .eq { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <header class="masthead">
+      <div class="grow">
+        <h1>Prime&nbsp;Line</h1>
+        <p>Every prime, in order, joined by one continuous line that walks up and out from the origin.</p>
+      </div>
+      <button id="theme" title="Toggle light / dark" aria-label="Toggle light or dark theme" style="flex:none;padding:6px 8px;">◐</button>
+    </header>
+
+    <section class="sect">
+      <h2>Path</h2>
+      <div class="modes" id="modes"></div>
+    </section>
+
+    <section class="sect">
+      <h2>Scale</h2>
+      <div class="field">
+        <label class="lab" for="count"><span>primes plotted</span><span class="val" id="countVal">25,000</span></label>
+        <input type="range" id="count" min="0" max="8" step="1" value="4" />
+        <div class="hint" id="countHint">up to p = 287,117</div>
+      </div>
+      <div class="field" id="fieldM">
+        <label class="lab" for="modulus"><span>modulus m</span><span class="val" id="mVal">30</span></label>
+        <input type="range" id="modulus" min="2" max="120" step="1" value="30" />
+        <div class="hint" id="mHint">φ(30) = 8 lanes can hold primes</div>
+      </div>
+      <div class="field" id="fieldB">
+        <label class="lab" for="base"><span>turn multiplier B</span><span class="val" id="bVal">10</span></label>
+        <input type="range" id="base" min="2" max="64" step="1" value="10" />
+        <div class="hint">one full turn = primes ×B</div>
+      </div>
+    </section>
+
+    <section class="sect">
+      <h2>Trace</h2>
+      <div class="toggles">
+        <button id="tLine" aria-pressed="true">line</button>
+        <button id="tDots" aria-pressed="false">dots</button>
+        <button id="tGuides" aria-pressed="true">guides</button>
+        <button id="tGlow" aria-pressed="true">glow</button>
+      </div>
+      <div class="field">
+        <label class="lab" for="weight"><span>line weight</span><span class="val" id="wVal">1.0 px</span></label>
+        <input type="range" id="weight" min="2" max="40" step="1" value="10" />
+      </div>
+      <div class="field">
+        <label class="lab" for="alpha"><span>ink opacity</span><span class="val" id="aVal">55%</span></label>
+        <input type="range" id="alpha" min="4" max="100" step="1" value="55" />
+      </div>
+      <div class="field">
+        <span class="lab"><span>colour by</span></span>
+        <div class="toggles" id="colorModes">
+          <button data-c="flat" aria-pressed="true">flat</button>
+          <button data-c="gap" aria-pressed="false">gap</button>
+          <button data-c="order" aria-pressed="false">order</button>
+          <button data-c="res" aria-pressed="false">p mod m</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="sect">
+      <h2>Drawing</h2>
+      <div class="toggles">
+        <button id="tAnim" aria-pressed="true">animate</button>
+      </div>
+      <div class="field" id="fieldSpeed">
+        <label class="lab" for="speed"><span>primes / frame</span><span class="val" id="sVal">600</span></label>
+        <input type="range" id="speed" min="1" max="60" step="1" value="24" />
+      </div>
+      <div class="actions">
+        <button id="replay">↻ replay</button>
+        <button id="reset">⌖ fit view</button>
+        <button id="save" class="wide">↓ save PNG</button>
+      </div>
+    </section>
+
+    <div class="keys">
+      <b>drag</b> pan · <b>wheel</b> zoom · <b>dbl-click</b> fit<br />
+      <b>1–9</b> path · <b>space</b> replay · <b>+ −</b> zoom · <b>S</b> save
+    </div>
+  </aside>
+
+  <main class="stage" id="stage">
+    <canvas id="plot"></canvas>
+    <canvas id="head" aria-hidden="true"></canvas>
+    <div class="plate formula">
+      <span class="name" id="fName">Prime galaxy</span>
+      <span class="eq" id="fEq"></span>
+    </div>
+    <div class="readout">
+      <div class="plate legend" id="legend" hidden>
+        <span class="lt" id="legendTitle">gap</span>
+        <div class="bar" id="legendBar"></div>
+        <div class="ends"><span id="legendLo">0</span><span id="legendHi">1</span></div>
+        <div class="swatches" id="legendSw" hidden></div>
+      </div>
+      <dl class="plate stats" id="stats"></dl>
+    </div>
+    <div class="plate note" id="note" data-open="true">
+      <button id="noteToggle" aria-expanded="true" aria-controls="noteBody">
+        <span>The pattern</span><span class="chev">−</span>
+      </button>
+      <div class="body" id="noteBody"></div>
+    </div>
+    <div class="plate tip" id="tip"></div>
+    <div class="plate busy" id="busy">sieving…</div>
+  </main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ============================== theme ============================== */
+  const root = document.documentElement;
+  const mq = matchMedia("(prefers-color-scheme: dark)");
+  const isDark = () => (root.dataset.theme ? root.dataset.theme === "dark" : mq.matches);
+
+  const PAL = {
+    dark: {
+      bg: "#070A11", ink: "#E4E9F2", muted: "#77839A", grid: "rgba(228,233,242,0.09)",
+      flat: "#3FBECF", spark: "#F2B45C", ref: "rgba(242,180,92,0.55)",
+      // sequential, one hue each, dark ground → dark-to-light
+      gap:   ["#0E3540", "#125C6B", "#1A8896", "#31B3B8", "#6BD9C6", "#B4F2DC"],
+      order: ["#241B4A", "#382879", "#5138AE", "#6E55D8", "#9A83EE", "#CFC0FF"],
+      cat:   ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
+      other: "#5B6478"
+    },
+    light: {
+      bg: "#ECEFF3", ink: "#0F141D", muted: "#6B7686", grid: "rgba(15,20,29,0.10)",
+      flat: "#0D6D7B", spark: "#B4691A", ref: "rgba(180,105,26,0.6)",
+      // light ground → light-to-dark
+      gap:   ["#BEE9E0", "#86D2CB", "#4CAFB2", "#248A92", "#11626F", "#063C48"],
+      order: ["#D6CCF7", "#B29CEC", "#8A6FD9", "#6448BA", "#452F92", "#2A1B63"],
+      cat:   ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"],
+      other: "#98A2B2"
+    }
+  };
+  const pal = () => (isDark() ? PAL.dark : PAL.light);
+
+  /* ============================== sieve ============================== */
+  let PRIMES = new Int32Array(0);
+  let sievedTo = 0;
+
+  function limitForCount(k) {
+    if (k < 6) return 15;
+    const l = Math.log(k);
+    return Math.ceil(k * (l + Math.log(l)) * 1.06) + 32;
+  }
+  function sieve(limit) {
+    const comp = new Uint8Array(limit + 1);
+    const out = [];
+    for (let i = 2; i <= limit; i++) {
+      if (!comp[i]) {
+        out.push(i);
+        if (i * i <= limit) for (let j = i * i; j <= limit; j += i) comp[j] = 1;
+      }
+    }
+    return Int32Array.from(out);
+  }
+  function ensurePrimes(k) {
+    if (PRIMES.length >= k) return;
+    const limit = limitForCount(k);
+    PRIMES = sieve(Math.max(limit, sievedTo * 2));
+    sievedTo = limit;
+  }
+
+  /* ============================== paths ============================== */
+  const TAU = Math.PI * 2;
+  const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // 137.507…°
+
+  // Each path maps prime index i (0-based) and prime p to raw plane coords.
+  // kind: "polar" draws guide rings, "cartesian" draws a framed axis pair.
+  // pre: the ink settings this particular plot reads best at — applied on switch.
+  const PATHS = [
+    {
+      id: "galaxy", name: "Prime galaxy", kind: "polar",
+      eq: "r = p,  θ = p rad",
+      uses: [],
+      pre: { line: false, dots: true, alpha: 0.55, weight: 0.9 },
+      map: (i, p) => [p * Math.cos(p), p * Math.sin(p)],
+      note: () => `<p>Distance <code>p</code>, angle <code>p</code> <em>radians</em> — the one plot where the prime itself is both coordinates. It should look like noise. It doesn't.</p>
+        <p>Angles repeat whenever a whole number of radians nearly closes a circle, so the arms count the good rational approximations to 2π. <b>44 ≈ 7·2π</b> sorts every integer into 44 lanes by <code>p mod 44</code>, and a prime can only sit in a lane coprime to 44 — <b>φ(44) = 20 arms</b>. They curl instead of running straight because 44 overshoots 7·2π by 0.0177 radians, so each step along a lane rotates it that little bit further.</p>
+        <p>Drag the count up and the picture reorganises. The next convergent, <b>710 ≈ 113·2π</b>, is accurate to five decimal places, so its 710 lanes stay coherent for far longer and take over: <b>φ(710) = 280 arms</b>, near enough straight. After that comes 103,993.</p>`
+    },
+    {
+      id: "sacks", name: "Sacks spiral", kind: "polar",
+      eq: "r = √p,  θ = 2π√p",
+      uses: [],
+      pre: { line: false, dots: true, alpha: 0.7, weight: 0.9 },
+      map: (i, p) => { const r = Math.sqrt(p); const t = TAU * r; return [r * Math.cos(t), r * Math.sin(t)]; },
+      note: () => `<p>One full turn per perfect square, so every integer lands on an Archimedean spiral with the squares stacked along a single ray.</p>
+        <p>Quadratics become smooth curves here, so prime-rich quadratics show up as ribs — long clean arcs curling out of the middle while the space between them stays speckled. The most productive of them is <b>Euler's n² + n + 41</b>, prime for every n from 0 to 39 and still absurdly prime-dense long after.</p>`
+    },
+    {
+      id: "ulam", name: "Ulam spiral", kind: "polar",
+      eq: "square spiral, step 1",
+      uses: [],
+      pre: { line: false, dots: true, alpha: 0.8, weight: 1.1 },
+      map: (i, p) => ulamXY(p),
+      note: () => `<p>Ulam's 1963 doodle, drawn during a dull lecture: lay the integers on a square spiral and mark the primes. Nobody expects structure from a layout that arbitrary, and yet the marks fall onto <b>diagonals</b>. Switch the line on and it hops between rings, since consecutive primes land nowhere near each other.</p>
+        <p>Every diagonal of this spiral is a quadratic <code>4n² + bn + c</code>. Some of those polynomials are structurally forced to dodge small factors, so they harvest primes far above the going rate — the streaks are those polynomials seen edge-on.</p>`
+    },
+    {
+      id: "vogel", name: "Golden angle", kind: "polar",
+      eq: "r = √p,  θ = p · 137.507°",
+      uses: [],
+      pre: { line: false, dots: true, alpha: 0.6, weight: 0.9 },
+      map: (i, p) => { const r = Math.sqrt(p); const t = p * GOLDEN; return [r * Math.cos(t), r * Math.sin(t)]; },
+      note: () => `<p>The sunflower lattice: turn by the golden angle at every integer and points pack with no repeating lanes at all — that is the whole point of φ, the worst-approximable number.</p>
+        <p>So the arms you do see are the <b>Fibonacci</b> convergents 8, 13, 21, 34, 55 …, and because the lattice never lines up cleanly, the primes get smeared evenly instead of banding. This is the control experiment: a spiral where primes look like nothing at all.</p>`
+    },
+    {
+      id: "log", name: "Log spiral", kind: "polar",
+      eq: "r = θ = 2π·log_B p",
+      uses: ["B"],
+      pre: { line: true, dots: true, alpha: 0.38, weight: 0.8 },
+      map: (i, p, s) => { const u = Math.log(p) / Math.log(s.B); const t = TAU * u; return [u * Math.cos(t), u * Math.sin(t)]; },
+      note: (s) => {
+        const rings = [];
+        for (let i = 0; i < s.N; i++) {
+          const k = Math.floor(Math.log(PRIMES[i]) / Math.log(s.B));
+          rings[k] = (rings[k] || 0) + 1;
+        }
+        const full = rings.map((c, k) => ({ c, k })).filter(o => o && o.c);
+        const tail = full.slice(0, -1).slice(-4);
+        const counts = tail.map(o => o.c.toLocaleString()).join(" → ");
+        const ratios = tail.slice(1).map((o, i) => "×" + (o.c / tail[i].c).toFixed(1)).join(", ");
+        return `<p>Radius grows with <code>log p</code>, so one full turn multiplies the primes by <b>B = ${s.B}</b>. Every ring is one order of magnitude of the number line, laid end to end — the whole plotted range folds onto a handful of turns.</p>
+        <p>The line does not thin as it winds out; it <b>fills in</b>. Each ring carries B times as many integers as the one inside it while being barely longer, so the beads merge and the primes stop being individually resolvable. The thinning is still there, just outvoted — count the rings instead of looking at them. This plot: <b>${counts}</b> primes per ring${ratios ? `, growing ${ratios}` : ""}, always short of the ×${s.B} the ring width would give. That shortfall <em>is</em> the <b>prime number theorem</b>: one prime per <code>ln p</code> integers, with <code>ln p</code> climbing every turn.</p>`;
+      }
+    },
+    {
+      id: "rays", name: "Residue rays", kind: "polar",
+      eq: "θ = 2π · (p mod m)/m,  r = √(i/N)",
+      uses: ["m"],
+      pre: { line: true, dots: true, alpha: 0.09, weight: 0.7 },
+      map: (i, p, s) => { const t = TAU * (p % s.m) / s.m; const r = Math.sqrt((i + 1) / s.N); return [r * Math.cos(t), r * Math.sin(t)]; },
+      note: (s) => `<p>Fire each prime down the spoke matching <code>p mod ${s.m}</code>. The disc collapses to <b>${phi(s.m)} rays</b> — a prime can't share a factor with the modulus, so every other spoke is dead. The only exceptions are the primes that divide <b>m</b> itself: they sit alone on their own spoke and are never joined, which is why the counter reads a few more lanes than φ(m).</p>
+        <p>The surviving rays fill at the same rate as each other — that is <b>Dirichlet's theorem</b>, that primes split evenly among the φ(m) admissible classes. The line stitching between spokes is the sequence's own order, and the ray count lurches as you drag m: 8 at 30, 48 at 210, but 64 at the far less special 128.</p>`
+    },
+    {
+      id: "stair", name: "Prime staircase", kind: "cartesian",
+      eq: "x = p,  y = π(p)",
+      uses: [],
+      pre: { line: true, dots: false, alpha: 1, weight: 1.5, glow: false },
+      xlab: "p", ylab: "π(p)",
+      map: (i, p) => [p, i + 1],
+      note: () => `<p>The literal up-and-out: step right to the next prime, step up by one. This is <b>π(x)</b>, the prime counting function, and at this scale the staircase is a straight line you can lay a ruler on.</p>
+        <p>The dashed curve is <code>x / ln x</code> — the prime number theorem's estimate. It tracks the staircase but runs consistently low, and the ratio crawls toward 1 so slowly that the error is still the deepest open question in the subject.</p>`
+    },
+    {
+      id: "gaps", name: "Gap comb", kind: "cartesian",
+      eq: "x = p,  y = p − p_prev",
+      uses: [],
+      pre: { line: false, dots: true, alpha: 0.5, weight: 1.1, glow: false },
+      xlab: "p", ylab: "gap",
+      map: (i, p, s) => [p, i === 0 ? 1 : p - s.prev[i - 1]],
+      note: () => `<p>Every gap between consecutive primes, in order. After the single odd gap of 1 (from 2 to 3) every value is <b>even</b>, so the plot combs itself into horizontal rails, densest at 2, 4 and 6.</p>
+        <p>The ascending staircase is the record: each new <b>maximal gap</b>, the first stretch of that length anywhere in the integers. Records grow roughly like <code>(ln p)²</code> — brutally slow — while the rails below them never stop producing gaps of 2, or so the twin prime conjecture insists.</p>`
+    },
+    {
+      id: "turtle", name: "Turtle walk", kind: "polar",
+      eq: "step 1, turn 2π·(p mod m)/m",
+      uses: ["m"],
+      pre: { line: true, dots: false, alpha: 0.55, weight: 1 },
+      map: null, // integrated below
+      note: (s) => `<p>Hand the line to a turtle: walk one unit, then turn by <code>2π·(p mod ${s.m})/${s.m}</code> at every prime. Nothing here is random, yet the walk wanders like a drunk.</p>
+        <p>Change <b>m</b> and the character snaps between regimes. A small m leaves the turtle a short menu of turns and the path stiffens into repeated motifs; a large one hands it a near-continuous choice and the track sprawls, drifting from the origin at roughly <code>√N</code> like any random walk. What it never does is close up or repeat, because the residues never settle into a cycle.</p>
+        <p>Worth knowing what you are <em>not</em> seeing: the primes really are unevenly split between residue classes — <b>Chebyshev's bias</b> — but that skew is far too faint to bend a walk this size. Every wander here is the ordinary randomness of a very much non-random sequence.</p>`
+    }
+  ];
+
+  function ulamXY(n) {
+    // n=1 at origin, spiralling counter-clockwise.
+    if (n < 1) return [0, 0];
+    const r = Math.floor((Math.sqrt(n - 1) + 1) / 2);
+    if (r === 0) return [0, 0];
+    const side = 2 * r;
+    let t = n - (2 * r - 1) * (2 * r - 1) - 1; // 0 .. 8r-1
+    const leg = Math.floor(t / side), off = t % side;
+    switch (leg) {
+      case 0: return [r, -r + 1 + off];
+      case 1: return [r - 1 - off, r];
+      case 2: return [-r, r - 1 - off];
+      default: return [-r + 1 + off, -r];
+    }
+  }
+  function phi(n) {
+    let r = n, x = n;
+    for (let f = 2; f * f <= x; f++) {
+      if (x % f === 0) { while (x % f === 0) x /= f; r -= r / f; }
+    }
+    if (x > 1) r -= r / x;
+    return Math.round(r);
+  }
+
+  /* ============================== state ============================== */
+  const COUNTS = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000];
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const S = {
+    path: PATHS[0],
+    N: 25000,
+    m: 30,
+    B: 10,
+    line: true, dots: false, guides: true, glow: true,
+    weight: 1.0, alpha: 0.55,
+    color: "flat",
+    animate: !reduceMotion, speed: 600,
+    zoom: 1, panX: 0, panY: 0
+  };
+
+  // plotted data
+  let RX = null, RY = null, BUCKET = null, NBUCK = 24;
+  let RESLIST = [], resOther = 0;
+  let bb = { x0: 0, x1: 1, y0: 0, y1: 1 }, tf = { sx: 1, sy: 1, tx: 0, ty: 0 };
+  let stats = {};
+  let cursor = 0, raf = 0;
+
+  /* ============================== canvas ============================== */
+  const cv = document.getElementById("plot");
+  const ctx = cv.getContext("2d", { alpha: false });
+  const hv = document.getElementById("head");
+  const hctx = hv.getContext("2d");
+  const stage = document.getElementById("stage");
+  let W = 0, H = 0, DPR = 1;
+
+  function resize() {
+    DPR = Math.min(devicePixelRatio || 1, 2);
+    const r = stage.getBoundingClientRect();
+    W = Math.max(1, Math.round(r.width));
+    H = Math.max(1, Math.round(r.height));
+    cv.width = hv.width = Math.round(W * DPR);
+    cv.height = hv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    hctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    redraw();
+  }
+
+  // The drawing box. Polar plots stay centred in the stage; framed plots dodge
+  // the floating plates so axis labels and data never hide under them.
+  function viewBox() {
+    if (S.path.kind === "cartesian" && W > 900) {
+      const note = $("note");
+      const noteEdge = note.dataset.open === "true" ? note.offsetLeft + note.offsetWidth + 28 : 72;
+      const x0 = Math.max(72, noteEdge), x1 = W - 28;
+      const y0 = 70, y1 = H - 46;
+      return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, hw: (x1 - x0) / 2, hh: (y1 - y0) / 2 };
+    }
+    if (S.path.kind === "cartesian") {
+      return { cx: (66 + W - 16) / 2, cy: (64 + H - 40) / 2, hw: (W - 82) / 2, hh: (H - 104) / 2 };
+    }
+    const s = Math.min(W, H) / 2 * 0.9;
+    return { cx: W / 2, cy: H / 2, hw: s, hh: s };
+  }
+
+  let V = { cx: 0, cy: 0, sx: 1, sy: 1 };
+  function updateView() {
+    const b = viewBox();
+    V.cx = b.cx + S.panX; V.cy = b.cy + S.panY;
+    V.sx = b.hw * S.zoom; V.sy = b.hh * S.zoom;
+  }
+  const toScreenX = x => V.cx + x * V.sx;
+  const toScreenY = y => V.cy - y * V.sy;
+  const toWorldX = sx => (sx - V.cx) / V.sx;
+  const toWorldY = sy => -(sy - V.cy) / V.sy;
+  // raw data coords -> normalised [-1,1]
+  const nx = v => (v - tf.tx) * tf.sx;
+  const ny = v => (v - tf.ty) * tf.sy;
+
+  /* ============================== compute ============================== */
+  function compute() {
+    const N = S.N;
+    ensurePrimes(N);
+    const P = PRIMES;
+    RX = new Float64Array(N);
+    RY = new Float64Array(N);
+
+    const scope = { m: S.m, B: S.B, N, prev: P };
+
+    if (S.path.id === "turtle") {
+      let x = 0, y = 0, h = 0;
+      for (let i = 0; i < N; i++) {
+        RX[i] = x; RY[i] = y;
+        h += TAU * (P[i] % S.m) / S.m;
+        x += Math.cos(h); y += Math.sin(h);
+      }
+    } else {
+      const f = S.path.map;
+      for (let i = 0; i < N; i++) {
+        const pt = f(i, P[i], scope);
+        RX[i] = pt[0]; RY[i] = pt[1];
+      }
+    }
+
+    // bounds
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (let i = 0; i < N; i++) {
+      const x = RX[i], y = RY[i];
+      if (x < x0) x0 = x; if (x > x1) x1 = x;
+      if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    bb = { x0, x1, y0, y1 };
+
+    // normalise: polar keeps aspect (shape matters), cartesian fills both axes
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const dx = Math.max(x1 - x0, 1e-9), dy = Math.max(y1 - y0, 1e-9);
+    if (S.path.kind === "cartesian") {
+      tf = { sx: 2 / dx, sy: 2 / dy, tx: cx, ty: cy };
+    } else {
+      const s = 2 / Math.max(dx, dy);
+      tf = { sx: s, sy: s, tx: cx, ty: cy };
+    }
+
+    buildBuckets();
+    buildStats();
+  }
+
+  function buildBuckets() {
+    const N = S.N, P = PRIMES;
+    BUCKET = new Uint8Array(N);
+    if (S.color === "flat") { NBUCK = 1; return; }
+    if (S.color === "res") {
+      // hand the eight slots to the eight busiest classes — the lanes a prime can
+      // actually live in — not to the one-off residues from primes dividing m
+      const counts = new Map();
+      for (let i = 0; i < N; i++) {
+        const r = P[i] % S.m;
+        counts.set(r, (counts.get(r) || 0) + 1);
+      }
+      RESLIST = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+        .slice(0, 8).map(e => e[0]).sort((a, b) => a - b);
+      const slot = new Map(RESLIST.map((r, k) => [r, k]));
+      for (let i = 0; i < N; i++) {
+        const k = slot.get(P[i] % S.m);
+        BUCKET[i] = k === undefined ? 8 : k;
+      }
+      resOther = counts.size - RESLIST.length;
+      NBUCK = Math.min(counts.size, 9);
+      return;
+    }
+    NBUCK = 24;
+    if (S.color === "order") {
+      for (let i = 0; i < N; i++) BUCKET[i] = Math.min(23, (i / N * 24) | 0);
+    } else { // gap, log-scaled so the fat tail stays legible
+      let gmax = 2;
+      for (let i = 1; i < N; i++) { const g = P[i] - P[i - 1]; if (g > gmax) gmax = g; }
+      const lg = Math.log(gmax);
+      for (let i = 0; i < N; i++) {
+        const g = i === 0 ? 1 : P[i] - P[i - 1];
+        BUCKET[i] = Math.min(23, ((Math.log(g) / lg) * 24) | 0);
+      }
+      stats.gmax = gmax;
+    }
+  }
+
+  function buildStats() {
+    const N = S.N, P = PRIMES;
+    const pMax = P[N - 1];
+    let gmax = 1, gmaxAt = 3, twins = 0;
+    for (let i = 1; i < N; i++) {
+      const g = P[i] - P[i - 1];
+      if (g > gmax) { gmax = g; gmaxAt = P[i]; }
+      if (g === 2) twins++;
+    }
+    const occupied = new Set();
+    for (let i = 0; i < N; i++) occupied.add(P[i] % S.m);
+    stats = {
+      N, pMax, gmax, gmaxAt, twins,
+      est: pMax / Math.log(pMax),
+      rays: occupied.size, phim: phi(S.m), gmaxCap: gmax
+    };
+  }
+
+  /* ============================== colours ============================== */
+  let RAMP = [];
+  function buildRamp() {
+    const p = pal();
+    if (S.color === "flat") { RAMP = [p.flat]; return; }
+    if (S.color === "res") { RAMP = p.cat.concat([p.other]); return; }
+    const stops = S.color === "gap" ? p.gap : p.order;
+    RAMP = [];
+    for (let i = 0; i < NBUCK; i++) RAMP.push(lerpRamp(stops, i / (NBUCK - 1)));
+  }
+  function lerpRamp(stops, t) {
+    const u = Math.max(0, Math.min(1, t)) * (stops.length - 1);
+    const i = Math.min(stops.length - 2, Math.floor(u)), f = u - i;
+    const a = hex2rgb(stops[i]), b = hex2rgb(stops[i + 1]);
+    return `rgb(${Math.round(a[0] + (b[0] - a[0]) * f)},${Math.round(a[1] + (b[1] - a[1]) * f)},${Math.round(a[2] + (b[2] - a[2]) * f)})`;
+  }
+  function hex2rgb(h) {
+    const v = parseInt(h.slice(1), 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+  }
+
+  /* ============================== render ============================== */
+  function clearStage() {
+    const p = pal();
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = p.bg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawGuides() {
+    if (!S.guides) return;
+    const p = pal();
+    ctx.save();
+    ctx.strokeStyle = p.grid;
+    ctx.fillStyle = p.muted;
+    ctx.lineWidth = 1;
+    ctx.font = "10px " + getComputedStyle(document.body).fontFamily;
+
+    if (S.path.kind === "cartesian") {
+      // frame + ticks in real data units
+      const L = toScreenX(-1), R = toScreenX(1), B = toScreenY(-1), T = toScreenY(1);
+      ctx.beginPath();
+      ctx.moveTo(L, T); ctx.lineTo(L, B); ctx.lineTo(R, B);
+      ctx.stroke();
+      ctx.setLineDash([2, 4]);
+      for (let k = 1; k <= 4; k++) {
+        const fx = L + (R - L) * k / 4, fy = B + (T - B) * k / 4;
+        ctx.beginPath(); ctx.moveTo(fx, B); ctx.lineTo(fx, T); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(L, fy); ctx.lineTo(R, fy); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      for (let k = 0; k <= 4; k++) {
+        const v = bb.x0 + (bb.x1 - bb.x0) * k / 4;
+        ctx.fillText(fmt(v), L + (R - L) * k / 4, B + 6);
+      }
+      ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      for (let k = 0; k <= 4; k++) {
+        const v = bb.y0 + (bb.y1 - bb.y0) * k / 4;
+        ctx.fillText(fmt(v), L - 6, B + (T - B) * k / 4);
+      }
+      ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+      ctx.fillText(S.path.ylab || "y", L + 4, T - 4);
+      ctx.textAlign = "right"; ctx.textBaseline = "top";
+      ctx.fillText(S.path.xlab || "x", R, B + 20);
+    } else {
+      const cxs = toScreenX(0), cys = toScreenY(0);
+      for (let k = 1; k <= 4; k++) {
+        const rr = Math.min(V.sx, V.sy) * (k / 4);
+        ctx.beginPath(); ctx.arc(cxs, cys, rr, 0, TAU); ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.moveTo(cxs - 7, cys); ctx.lineTo(cxs + 7, cys);
+      ctx.moveTo(cxs, cys - 7); ctx.lineTo(cxs, cys + 7);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawReference() {
+    const p = pal();
+    if (S.path.id === "stair") {
+      // x / ln x
+      ctx.save();
+      ctx.strokeStyle = p.ref; ctx.lineWidth = 1.25; ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      const steps = 220;
+      for (let k = 0; k <= steps; k++) {
+        const x = Math.max(3, bb.x0 + (bb.x1 - bb.x0) * k / steps);
+        const y = x / Math.log(x);
+        const sx = toScreenX(nx(x)), sy = toScreenY(ny(y));
+        k ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+      }
+      ctx.stroke();
+      ctx.restore();
+    } else if (S.path.id === "gaps") {
+      // record-gap staircase
+      ctx.save();
+      ctx.strokeStyle = p.ref; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      let rec = 1;
+      const P = PRIMES, N = S.N;
+      ctx.moveTo(toScreenX(nx(P[0])), toScreenY(ny(1)));
+      for (let i = 1; i < N; i++) {
+        const g = P[i] - P[i - 1];
+        if (g > rec) {
+          const sx = toScreenX(nx(P[i]));
+          ctx.lineTo(sx, toScreenY(ny(rec)));
+          ctx.lineTo(sx, toScreenY(ny(g)));
+          rec = g;
+        }
+      }
+      ctx.lineTo(toScreenX(nx(P[N - 1])), toScreenY(ny(rec)));
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // ink thins automatically as the count climbs, or half a million overlapping
+  // strokes just render as a white disc
+  const inkAlpha = () => {
+    const a = S.alpha * Math.min(1, Math.sqrt(25000 / S.N)) * (isDark() ? 1 : 1.7);
+    return Math.max(0.012, Math.min(1, a));
+  };
+
+  function drawChunk(from, to) {
+    const w = S.weight;
+    const A = inkAlpha();
+    const fat = w >= 2;
+    ctx.lineJoin = fat ? "round" : "miter";
+    ctx.lineCap = fat ? "round" : "butt";
+    ctx.miterLimit = 2;
+    ctx.globalAlpha = A;
+    if (S.glow) { ctx.globalCompositeOperation = isDark() ? "lighter" : "multiply"; }
+
+    if (S.line) {
+      ctx.lineWidth = w;
+      if (NBUCK === 1) {
+        ctx.strokeStyle = RAMP[0];
+        ctx.beginPath();
+        strokeRange(from, to);
+        ctx.stroke();
+      } else {
+        const paths = [];
+        for (let b = 0; b < RAMP.length; b++) paths.push(null);
+        const start = Math.max(1, from);
+        for (let i = start; i < to; i++) {
+          const b = BUCKET[i];
+          let pth = paths[b];
+          if (!pth) { pth = paths[b] = new Path2D(); }
+          pth.moveTo(toScreenX(nx(RX[i - 1])), toScreenY(ny(RY[i - 1])));
+          pth.lineTo(toScreenX(nx(RX[i])), toScreenY(ny(RY[i])));
+        }
+        for (let b = 0; b < paths.length; b++) {
+          if (!paths[b]) continue;
+          ctx.strokeStyle = RAMP[b] || RAMP[RAMP.length - 1];
+          ctx.stroke(paths[b]);
+        }
+      }
+    }
+
+    if (S.dots) {
+      const d = Math.max(1, w * 1.6), h = d / 2;
+      ctx.globalAlpha = Math.min(1, A * 1.7 + 0.06);
+      // one batched fill per colour beats a fillRect per prime by an order of magnitude
+      const boxes = [];
+      for (let i = from; i < to; i++) {
+        const b = NBUCK === 1 ? 0 : BUCKET[i];
+        let pth = boxes[b];
+        if (!pth) pth = boxes[b] = new Path2D();
+        pth.rect(toScreenX(nx(RX[i])) - h, toScreenY(ny(RY[i])) - h, d, d);
+      }
+      for (let b = 0; b < boxes.length; b++) {
+        if (!boxes[b]) continue;
+        ctx.fillStyle = RAMP[b] || RAMP[RAMP.length - 1];
+        ctx.fill(boxes[b]);
+      }
+    }
+
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = 1;
+  }
+
+  function strokeRange(from, to) {
+    const start = Math.max(0, from - 1);
+    ctx.moveTo(toScreenX(nx(RX[start])), toScreenY(ny(RY[start])));
+    for (let i = start + 1; i < to; i++) {
+      ctx.lineTo(toScreenX(nx(RX[i])), toScreenY(ny(RY[i])));
+    }
+  }
+
+  function clearHead() { hctx.clearRect(0, 0, W, H); }
+
+  function drawHead() {
+    clearHead();
+    if (cursor <= 0 || cursor >= S.N) return;
+    const p = pal();
+    const x = toScreenX(nx(RX[cursor - 1])), y = toScreenY(ny(RY[cursor - 1]));
+    const g = hctx.createRadialGradient(x, y, 0, x, y, 18);
+    g.addColorStop(0, p.spark);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    hctx.globalAlpha = 0.8;
+    hctx.fillStyle = g;
+    hctx.beginPath(); hctx.arc(x, y, 18, 0, TAU); hctx.fill();
+    hctx.globalAlpha = 1;
+    hctx.fillStyle = p.spark;
+    hctx.beginPath(); hctx.arc(x, y, 2.2, 0, TAU); hctx.fill();
+  }
+
+  function redraw() {
+    if (!RX) return;
+    cancelAnimationFrame(raf);
+    updateView();
+    lastTs = 0;
+    clearHead();
+    clearStage();
+    drawGuides();
+    drawReference();
+    cursor = 0;
+    step();
+  }
+
+  // when not animating we still draw across frames. The budget is set from real
+  // frame cadence, not from time spent in JS: the expensive part is rasterising the
+  // strokes, which happens after drawChunk returns.
+  let chunkSize = 4000, lastTs = 0;
+  function step(ts) {
+    const chunk = S.animate ? S.speed : chunkSize;
+    const to = Math.min(S.N, cursor + chunk);
+    if (to > cursor) {
+      drawChunk(cursor, to);
+      cursor = to;
+    }
+    if (!S.animate && ts) {
+      const frame = lastTs ? ts - lastTs : 16;
+      lastTs = ts;
+      const f = frame > 26 ? 0.55 : frame < 15 ? 1.5 : 1;
+      chunkSize = Math.max(400, Math.min(24000, Math.round(chunkSize * f)));
+    }
+    if (cursor < S.N) {
+      if (S.animate) drawHead();
+      raf = requestAnimationFrame(step);
+    } else {
+      clearHead();
+      hoverDraw();
+    }
+  }
+
+  /* ============================== hover ============================== */
+  const tip = document.getElementById("tip");
+  let hover = { x: -1, y: -1, on: false, idx: -1 };
+  let hoverRaf = 0;
+
+  function hoverDraw() {
+    if (!hover.on || !RX || cursor < 1) { tip.classList.remove("on"); return; }
+    const px = hover.x, py = hover.y;
+    let best = -1, bd = 1e18;
+    const lim = cursor;
+    for (let i = 0; i < lim; i++) {
+      const dx = toScreenX(nx(RX[i])) - px, dy = toScreenY(ny(RY[i])) - py;
+      const d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = i; }
+    }
+    if (best < 0 || bd > 40 * 40) { tip.classList.remove("on"); hover.idx = -1; return; }
+    hover.idx = best;
+    const p = PRIMES[best];
+    const gap = best === 0 ? 1 : p - PRIMES[best - 1];
+    tip.innerHTML = `<b>p = ${p.toLocaleString()}</b> <span>·</span> #${(best + 1).toLocaleString()}` +
+      ` <span>·</span> gap ${gap} <span>·</span> mod ${S.m} = ${p % S.m}`;
+    const tw = tip.offsetWidth || 200, th = tip.offsetHeight || 28;
+    tip.style.left = Math.min(W - tw - 8, px + 14) + "px";
+    tip.style.top = Math.max(8, py - th - 12) + "px";
+    tip.classList.add("on");
+  }
+
+  stage.addEventListener("pointermove", e => {
+    const r = stage.getBoundingClientRect();
+    hover.x = e.clientX - r.left; hover.y = e.clientY - r.top; hover.on = !drag.active;
+    if (!hoverRaf) hoverRaf = requestAnimationFrame(() => { hoverRaf = 0; hoverDraw(); });
+  });
+  stage.addEventListener("pointerleave", () => { hover.on = false; tip.classList.remove("on"); });
+
+  /* ============================== pan / zoom ============================== */
+  const drag = { active: false, x: 0, y: 0, px: 0, py: 0 };
+  cv.addEventListener("pointerdown", e => {
+    drag.active = true; drag.x = e.clientX; drag.y = e.clientY;
+    drag.px = S.panX; drag.py = S.panY;
+    cv.setPointerCapture(e.pointerId);
+    cv.style.cursor = "grabbing";
+    tip.classList.remove("on");
+  });
+  cv.addEventListener("pointermove", e => {
+    if (!drag.active) return;
+    S.panX = drag.px + (e.clientX - drag.x);
+    S.panY = drag.py + (e.clientY - drag.y);
+    redraw();
+  });
+  const endDrag = e => {
+    if (!drag.active) return;
+    drag.active = false;
+    cv.style.cursor = "crosshair";
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+  };
+  cv.addEventListener("pointerup", endDrag);
+  cv.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("dblclick", () => { fitView(); });
+
+  cv.addEventListener("wheel", e => {
+    e.preventDefault();
+    const r = stage.getBoundingClientRect();
+    const mxs = e.clientX - r.left, mys = e.clientY - r.top;
+    const wx = toWorldX(mxs), wy = toWorldY(mys);
+    const f = Math.exp(-e.deltaY * 0.0016);
+    S.zoom = Math.max(0.05, Math.min(4000, S.zoom * f));
+    const b = viewBox();
+    S.panX = mxs - b.cx - wx * b.hw * S.zoom;
+    S.panY = mys - b.cy + wy * b.hh * S.zoom;
+    redraw();
+    renderStats();
+  }, { passive: false });
+
+  function zoomBy(f) {
+    const wx = toWorldX(W / 2), wy = toWorldY(H / 2);
+    S.zoom = Math.max(0.05, Math.min(4000, S.zoom * f));
+    const b = viewBox();
+    S.panX = W / 2 - b.cx - wx * b.hw * S.zoom;
+    S.panY = H / 2 - b.cy + wy * b.hh * S.zoom;
+    redraw(); renderStats();
+  }
+  function fitView() { S.zoom = 1; S.panX = 0; S.panY = 0; redraw(); renderStats(); }
+
+  /* ============================== chrome ============================== */
+  const $ = id => document.getElementById(id);
+  const fmtN = n => n.toLocaleString();
+  function fmt(v) {
+    const a = Math.abs(v);
+    if (a >= 1e9) return (v / 1e9).toFixed(1) + "B";
+    if (a >= 1e6) return (v / 1e6).toFixed(1) + "M";
+    if (a >= 1e3) return (v / 1e3).toFixed(a >= 1e4 ? 0 : 1) + "k";
+    if (Number.isInteger(v)) return String(v);
+    if (a >= 10) return String(Math.round(v));
+    return v.toFixed(1);
+  }
+
+  function buildModes() {
+    const wrap = $("modes");
+    PATHS.forEach((p, i) => {
+      const b = document.createElement("button");
+      b.innerHTML = `<span class="idx">${i + 1}</span>${p.name}`;
+      b.setAttribute("aria-pressed", String(p === S.path));
+      b.addEventListener("click", () => setPath(p));
+      p._btn = b;
+      wrap.appendChild(b);
+    });
+  }
+  function setPath(p) {
+    S.path = p;
+    PATHS.forEach(q => q._btn.setAttribute("aria-pressed", String(q === p)));
+    if (p.pre) { Object.assign(S, { glow: true, guides: true }, p.pre); syncControls(); }
+    fitView0();
+  }
+
+  // push state back into the rail after a preset lands
+  function syncControls() {
+    $("tLine").setAttribute("aria-pressed", String(S.line));
+    $("tDots").setAttribute("aria-pressed", String(S.dots));
+    $("tGlow").setAttribute("aria-pressed", String(S.glow));
+    $("tGuides").setAttribute("aria-pressed", String(S.guides));
+    $("weight").value = Math.round(S.weight * 10);
+    $("wVal").textContent = S.weight.toFixed(1) + " px";
+    $("alpha").value = Math.round(S.alpha * 100);
+    $("aVal").textContent = Math.round(S.alpha * 100) + "%";
+  }
+
+  function syncChrome() {
+    const p = S.path;
+    $("fName").textContent = p.name;
+    $("fEq").textContent = p.eq;
+    $("noteBody").innerHTML = p.note({ m: S.m, B: S.B, N: S.N });
+    $("fieldM").classList.toggle("off", !p.uses.includes("m") && S.color !== "res");
+    $("fieldB").classList.toggle("off", !p.uses.includes("B"));
+    $("fieldSpeed").classList.toggle("off", !S.animate);
+    $("mHint").textContent = `φ(${S.m}) = ${phi(S.m)} lanes can hold primes`;
+    renderLegend();
+    renderStats();
+  }
+
+  function renderLegend() {
+    const el = $("legend");
+    if (S.color === "flat") { el.hidden = true; return; }
+    el.hidden = false;
+    const bar = $("legendBar"), sw = $("legendSw");
+    if (S.color === "res") {
+      bar.hidden = true; $("legendLo").parentElement.hidden = true; sw.hidden = false;
+      $("legendTitle").textContent = `p mod ${S.m}`;
+      sw.innerHTML = RESLIST
+        .map((r, k) => `<span class="sw"><i style="background:${RAMP[k]}"></i>${r}</span>`)
+        .join("") + (resOther > 0 ? `<span class="sw"><i style="background:${pal().other}"></i>+${resOther} rare</span>` : "");
+    } else {
+      bar.hidden = false; $("legendLo").parentElement.hidden = false; sw.hidden = true;
+      const stops = RAMP.map((c, i) => `${c} ${(i / (RAMP.length - 1) * 100).toFixed(1)}%`).join(",");
+      bar.style.background = `linear-gradient(90deg, ${stops})`;
+      if (S.color === "gap") {
+        $("legendTitle").textContent = "gap between primes";
+        $("legendLo").textContent = "1"; $("legendHi").textContent = String(stats.gmax || "");
+      } else {
+        $("legendTitle").textContent = "position in the sequence";
+        $("legendLo").textContent = "1st"; $("legendHi").textContent = fmt(S.N) + "th";
+      }
+    }
+  }
+
+  function renderStats() {
+    const s = stats;
+    const rows = [
+      ["primes", fmtN(s.N)],
+      ["largest p", fmtN(s.pMax)],
+      ["max gap", `${s.gmax} at ${fmt(s.gmaxAt)}`],
+      ["twin pairs", fmtN(s.twins)],
+      ["π(p) ÷ p/ln p", (s.N / s.est).toFixed(4)],
+      ["zoom", "×" + (S.zoom < 10 ? S.zoom.toFixed(2) : fmt(S.zoom))]
+    ];
+    if (S.path.uses.includes("m") || S.color === "res") {
+      rows.splice(4, 0, ["lanes used", `${s.rays} of ${S.m}`], ["φ(m)", String(s.phim)]);
+    }
+    $("stats").innerHTML = rows
+      .map(([k, v], i) => `<dt>${k}</dt><dd${i === 4 && S.path.id === "stair" ? ' class="hi"' : ""}>${v}</dd>`)
+      .join("");
+  }
+
+  /* ============================== recompute pipeline ============================== */
+  let busyT = 0;
+  function recompute(refit) {
+    $("busy").classList.add("on");
+    clearTimeout(busyT);
+    // let the browser paint the busy plate before a long sieve
+    busyT = setTimeout(() => {
+      compute();
+      buildRamp();
+      syncChrome();
+      if (refit) { S.zoom = 1; S.panX = 0; S.panY = 0; }
+      redraw();
+      $("busy").classList.remove("on");
+    }, 16);
+  }
+  function fitView0() { recompute(true); }
+
+  /* ============================== controls ============================== */
+  function bindToggle(id, key, after) {
+    const b = $(id);
+    b.addEventListener("click", () => {
+      S[key] = !S[key];
+      b.setAttribute("aria-pressed", String(S[key]));
+      (after || redraw)();
+    });
+  }
+  bindToggle("tLine", "line");
+  bindToggle("tDots", "dots");
+  bindToggle("tGuides", "guides");
+  bindToggle("tGlow", "glow");
+  bindToggle("tAnim", "animate", () => { syncChrome(); redraw(); });
+
+  $("count").addEventListener("input", e => {
+    S.N = COUNTS[+e.target.value];
+    $("countVal").textContent = fmtN(S.N);
+    ensurePrimes(S.N);
+    $("countHint").textContent = "up to p = " + fmtN(PRIMES[S.N - 1]);
+    recompute(false);
+  });
+  $("modulus").addEventListener("input", e => {
+    S.m = +e.target.value;
+    $("mVal").textContent = S.m;
+    recompute(false);
+  });
+  $("base").addEventListener("input", e => {
+    S.B = +e.target.value;
+    $("bVal").textContent = S.B;
+    recompute(false);
+  });
+  $("weight").addEventListener("input", e => {
+    S.weight = +e.target.value / 10;
+    $("wVal").textContent = S.weight.toFixed(1) + " px";
+    redraw();
+  });
+  $("alpha").addEventListener("input", e => {
+    S.alpha = +e.target.value / 100;
+    $("aVal").textContent = Math.round(S.alpha * 100) + "%";
+    redraw();
+  });
+  $("speed").addEventListener("input", e => {
+    const v = +e.target.value;
+    S.speed = Math.round(25 * Math.pow(1.13, v));
+    $("sVal").textContent = fmtN(S.speed);
+  });
+  document.querySelectorAll("#colorModes button").forEach(b => {
+    b.addEventListener("click", () => {
+      S.color = b.dataset.c;
+      document.querySelectorAll("#colorModes button").forEach(o =>
+        o.setAttribute("aria-pressed", String(o === b)));
+      buildBuckets(); buildRamp(); syncChrome(); redraw();
+    });
+  });
+  $("noteToggle").addEventListener("click", () => {
+    const note = $("note");
+    const open = note.dataset.open !== "true";
+    note.dataset.open = String(open);
+    $("noteToggle").setAttribute("aria-expanded", String(open));
+    $("noteToggle").querySelector(".chev").textContent = open ? "−" : "+";
+    redraw();
+  });
+  $("replay").addEventListener("click", () => redraw());
+  $("reset").addEventListener("click", fitView);
+  $("save").addEventListener("click", () => {
+    cv.toBlob(blob => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `prime-line-${S.path.id}-${S.N}.png`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    });
+  });
+  $("theme").addEventListener("click", () => {
+    root.dataset.theme = isDark() ? "light" : "dark";
+    buildRamp(); redraw(); renderLegend();
+  });
+
+  addEventListener("keydown", e => {
+    if (e.target.matches("input, textarea")) return;
+    const k = e.key;
+    if (k >= "1" && k <= "9" && PATHS[+k - 1]) { setPath(PATHS[+k - 1]); return; }
+    if (k === " ") { e.preventDefault(); redraw(); }
+    else if (k === "+" || k === "=") zoomBy(1.3);
+    else if (k === "-" || k === "_") zoomBy(1 / 1.3);
+    else if (k === "s" || k === "S") $("save").click();
+    else if (k === "r" || k === "R") fitView();
+  });
+
+  const themeObserver = new MutationObserver(() => { buildRamp(); redraw(); renderLegend(); });
+  themeObserver.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  mq.addEventListener("change", () => { buildRamp(); redraw(); renderLegend(); });
+
+  let rzT = 0;
+  addEventListener("resize", () => { clearTimeout(rzT); rzT = setTimeout(resize, 120); });
+
+  /* ============================== boot ============================== */
+  buildModes();
+  if (innerWidth <= 900) {
+    $("note").dataset.open = "false";
+    $("noteToggle").setAttribute("aria-expanded", "false");
+    $("noteToggle").querySelector(".chev").textContent = "+";
+  }
+  if (S.path.pre) Object.assign(S, S.path.pre);
+  syncControls();
+  $("speed").value = 24; S.speed = Math.round(25 * Math.pow(1.13, 24));
+  $("sVal").textContent = fmtN(S.speed);
+  if (reduceMotion) $("tAnim").setAttribute("aria-pressed", "false");
+  ensurePrimes(S.N);
+  $("countHint").textContent = "up to p = " + fmtN(PRIMES[S.N - 1]);
+  compute();
+  buildRamp();
+  syncChrome();
+  resize();
+})();
+</script>
+</body>
+</html>
