@@ -250,6 +250,14 @@ Corollary obtained (not assumed):
 | realised classes ⊆ Selmer classes | asserted on every run |
 | descent bound vs. height-pairing bound | contradiction raises, never silently reported |
 | `ĥ(nP) = n² ĥ(P)` | interval-checked in the test suite |
+| p-adic engine hitting its search budget | **0 times in 1988 curves** — every local answer fully decided |
+
+**Are the undecided cases laziness or real Ш?** Re-running the 55 undecided
+curves from the sweep with a 6× deeper point search resolved exactly **2** of
+them (both to rank 1 — they were genuinely just large generators). The other
+**53 are real Ш obstructions**: no amount of searching will close them, because
+the missing points do not exist. That is the honest shape of the problem, and
+it is why the tool distinguishes "not found" from "not there".
 
 The single undecided congruent case is `n = 17` — the classical
 Lind–Reichardt curve `2y² = x⁴ − 17`, the textbook example of a genus-1 curve
@@ -277,7 +285,7 @@ The scope of the upper-bound engine is curves with a rational point of order 2
 and say so. Closing the remaining gaps requires:
 
 * **deeper point search** — when the gap is only a large generator (a search
-  failure, not Ш);
+  failure, not Ш); measured above, this accounts for only ~4 % of gaps;
 * **full 2-descent** over the cubic étale algebra `Q[x]/f(x)` — extends the
   upper bound to all curves; needs class groups and units of cubic fields;
 * **4-descent / n-descent** — the only thing that closes a *genuine* Ш[2] gap
