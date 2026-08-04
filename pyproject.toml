@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "igwatch"
+version = "1.0.0"
+description = "Watch an Instagram username and get alerted the moment it becomes available."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["instagram", "username", "availability", "monitor", "notify"]
+classifiers = [
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Programming Language :: Python :: 3",
+  "Topic :: Utilities",
+]
+dependencies = []
+
+[project.scripts]
+igwatch = "igwatch.cli:main"
+
+[tool.setuptools]
+packages = ["igwatch"]
