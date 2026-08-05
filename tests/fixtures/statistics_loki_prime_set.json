@@ -1,0 +1,98 @@
+{
+  "payload": {
+    "statistics_closed": {
+      "48hours": [
+        {
+          "datetime": "2026-08-04T00:00:00.000+00:00",
+          "volume": 7,
+          "min_price": 105,
+          "max_price": 135,
+          "avg_price": 121.4,
+          "wa_price": 120.2,
+          "median": 120,
+          "moving_avg": 119.8,
+          "order_type": "sell",
+          "id": "s1"
+        },
+        {
+          "datetime": "2026-08-04T12:00:00.000+00:00",
+          "volume": 5,
+          "min_price": 110,
+          "max_price": 128,
+          "avg_price": 118.0,
+          "wa_price": 118.6,
+          "median": 118,
+          "moving_avg": 119.1,
+          "order_type": "sell",
+          "id": "s2"
+        },
+        {
+          "datetime": "2026-08-05T00:00:00.000+00:00",
+          "volume": 9,
+          "min_price": 100,
+          "max_price": 130,
+          "avg_price": 117.2,
+          "wa_price": 117.0,
+          "median": 117,
+          "moving_avg": 118.4,
+          "order_type": "sell",
+          "id": "s3"
+        },
+        {
+          "datetime": "2026-08-05T00:00:00.000+00:00",
+          "volume": 3,
+          "min_price": 95,
+          "max_price": 110,
+          "avg_price": 101.0,
+          "wa_price": 100.5,
+          "median": 100,
+          "moving_avg": 102.0,
+          "order_type": "buy",
+          "id": "s4"
+        }
+      ],
+      "90days": [
+        {
+          "datetime": "2026-06-10T00:00:00.000+00:00",
+          "volume": 140,
+          "min_price": 95,
+          "max_price": 160,
+          "avg_price": 126.0,
+          "wa_price": 125.4,
+          "median": 125,
+          "moving_avg": 126.2,
+          "order_type": "sell",
+          "id": "d1"
+        },
+        {
+          "datetime": "2026-07-10T00:00:00.000+00:00",
+          "volume": 155,
+          "min_price": 92,
+          "max_price": 150,
+          "avg_price": 122.5,
+          "wa_price": 122.0,
+          "median": 122,
+          "moving_avg": 123.1,
+          "order_type": "sell",
+          "id": "d2"
+        },
+        {
+          "datetime": "2026-08-04T00:00:00.000+00:00",
+          "volume": 160,
+          "min_price": 90,
+          "max_price": 145,
+          "avg_price": 119.0,
+          "wa_price": 118.8,
+          "median": 119,
+          "moving_avg": 120.0,
+          "order_type": "sell",
+          "id": "d3"
+        }
+      ]
+    },
+    "statistics_live": {
+      "48hours": [],
+      "90days": []
+    }
+  }
+}

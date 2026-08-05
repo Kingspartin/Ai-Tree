@@ -1,0 +1,66 @@
+# wfbot configuration. Copy to wfbot.toml next to where you run the bot,
+# or to ~/.config/wfbot/wfbot.toml, and edit.
+#
+# Nothing here can make the bot touch the Warframe client. It only reads
+# warframe.market and manages listings on your own warframe.market account.
+
+[api]
+platform = "pc"            # pc | ps4 | xbox | switch
+language = "en"
+requests_per_second = 2.5  # warframe.market asks for no more than 3
+max_workers = 3
+orders_cache_ttl = 180     # seconds - the order book moves fast
+statistics_cache_ttl = 21600
+items_cache_ttl = 604800
+
+[scan]
+budget = 500               # platinum you are willing to tie up
+min_margin = 0.25          # only show flips with 25%+ profit over the buy price
+min_profit = 10            # ...and at least 10p per unit
+min_volume = 6.0           # trades per day; below this you will sit on the item
+max_price = 0              # 0 = no per-item price cap
+min_book_depth = 3
+candidate_limit = 250      # how many items get a full order-book pull per scan
+stale_order_days = 3.0     # listings older than this are treated as unreliable
+
+# Glob patterns matched against warframe.market url_names.
+include_patterns = ["*"]
+# Rivens are priced per roll and Kuva/Tenet weapons carry a bonus percentage,
+# so statistical pricing does not apply to them. Leave these excluded.
+exclude_patterns = ["*riven*", "*kuva_*", "*tenet_*", "*_relic", "*veiled*"]
+
+[trade]
+# Managing your own listings is the part that runs unattended. It is off until
+# you set this to true AND pass --live.
+live = false
+ingame_name = ""           # your Warframe name, exactly as warframe.market has it
+undercut_by = 1            # platinum below the cheapest live competitor
+outbid_by = 1              # platinum above the richest live competitor
+min_change = 1             # ignore changes smaller than this
+max_updates_per_cycle = 25
+min_seconds_between_updates = 900   # per order; stops price-war thrashing
+sell_floor_ratio = 0.60    # never sell below 60% of fair value
+buy_ceiling_ratio = 0.75   # never bid above 75% of fair value
+max_plat_in_buy_orders = 0 # 0 = unlimited
+hide_orders_when_offline = false    # needs [logwatch] to know if the game is up
+
+[notify]
+desktop = true
+console = true
+clipboard = true           # copy the whisper for the best deal
+min_score = 0.0
+cooldown_seconds = 1800    # per item, so a watch loop cannot spam you
+
+[logwatch]
+# Read-only tail of Warframe's own log file. Tells the bot when you are in-game.
+enabled = false
+path = ""                  # empty = auto-detect
+poll_interval = 1.0
+# These markers change between game updates - check your own EE.log and edit.
+whisper_patterns = [
+    "Dialog\\.lua.*?(?P<user>\\S+)\\s+wants to trade",
+    "whisper from (?P<user>\\S+)",
+]
+trade_patterns = ["Script \\[Info\\]: Trading\\.lua.*", "Sys \\[Info\\]: Set the trade"]
+game_start_patterns = ["Sys \\[Diag\\]: Current time:", "Main game loop"]
+game_stop_patterns = ["Game/Client shutdown", "Sys \\[Info\\]: Shutdown"]
