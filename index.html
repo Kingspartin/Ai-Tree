@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ai-Tree</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Your second brain: save thoughts and links, see how your ideas connect.">
+<meta name="theme-color" content="#f6f5f0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-screen phone app — sticky header, scrolling tab panels, bottom tab bar. The graph card is the hero. */
+:root {
+  --bg: #f6f5f0;
+  --surface: #ffffff;
+  --paper: #fdfaf4;
+  --ink: #1f2420;
+  --muted: #6b716b;
+  --line: #e2e0d8;
+  --accent: #2f6b4f;
+  --accent-ink: #ffffff;
+  --danger: #a8443c;
+  --edge: rgba(52, 46, 38, 0.13);
+  --dot: #26231f;
+  --font-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --nav-h: 64px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141714; --surface: #1d211d; --paper: #1a1d19; --ink: #ecebe4; --muted: #9aa198;
+    --line: #2e332d; --accent: #7cc09c; --accent-ink: #0f1a14; --danger: #e0877e;
+    --edge: rgba(236, 232, 220, 0.12); --dot: #ecebe4; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141714; --surface: #1d211d; --paper: #1a1d19; --ink: #ecebe4; --muted: #9aa198;
+  --line: #2e332d; --accent: #7cc09c; --accent-ink: #0f1a14; --danger: #e0877e;
+  --edge: rgba(236, 232, 220, 0.12); --dot: #ecebe4; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.45 var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.app { max-width: 560px; margin: 0 auto; min-height: 100%; padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 16px); }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; align-items: center; gap: 10px; padding-block: 12px;
+}
+.brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -0.01em; flex: 1; min-width: 0; }
+.brand svg { flex: none; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 38px; padding: 0 12px; border-radius: 19px; border: 1px solid var(--line);
+  background: var(--surface); font-size: 14px; font-weight: 600;
+}
+.icon-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+.panel { display: flex; flex-direction: column; gap: 18px; padding-block: 4px 12px; }
+
+/* Capture box */
+.capture { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.capture textarea, .capture input[type="url"], .capture input[type="text"] {
+  width: 100%; border: 0; background: transparent; resize: none; outline: none; font-size: 16px; min-height: 24px;
+}
+.capture-row { display: flex; align-items: center; gap: 8px; }
+.capture-row .hint { flex: 1; min-width: 0; color: var(--muted); font-size: 12.5px; }
+.capture .save { height: 34px; padding: 0 16px; border-radius: 17px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.capture .save:disabled { opacity: 0.4; }
+
+/* Graph card */
+.mind-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 6.4vw, 30px); line-height: 1.12; letter-spacing: -0.02em; margin: 6px 0 0; text-wrap: balance; }
+.graph-card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; position: relative; }
+.graph-card canvas { display: block; width: 100%; aspect-ratio: 1 / 1; max-width: 100%; touch-action: none; }
+.graph-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 10px 14px 12px; border-top: 1px solid var(--line); font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); letter-spacing: 0.02em; }
+.graph-foot span { min-width: 0; }
+.graph-foot span:last-child { white-space: nowrap; }
+.empty-graph { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 24px; color: var(--muted); }
+.empty-graph p { margin: 0; max-width: 28ch; }
+.example-tag { position: absolute; top: 10px; left: 10px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px 8px; color: var(--muted); }
+
+.section-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0; }
+.section-h h2 { margin: 0; font-family: var(--font-mono); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.section-h small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* Insights */
+.insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.insight { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; min-width: 0; }
+.insight .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.insight .v { font-weight: 600; margin-top: 4px; }
+.insight.wide { grid-column: 1 / -1; }
+
+/* Lists */
+.list { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; width: 100%; }
+.item:first-child { border-top: 0; }
+.item .badge { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: #fff; }
+.item .body { flex: 1; min-width: 0; }
+.item .t { font-weight: 500; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.item .meta { color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.02em; }
+.chip i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.empty-list { padding: 22px 16px; color: var(--muted); text-align: center; }
+.search { width: 100%; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); padding: 0 12px; font-size: 15px; }
+
+/* Bottom tabs */
+nav.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+nav.tabs .inner { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; height: var(--nav-h); }
+nav.tabs button { border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); font-size: 12px; font-weight: 600; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); }
+nav.tabs button[aria-selected="true"] svg { color: var(--accent); }
+nav.tabs .count { font-variant-numeric: tabular-nums; font-weight: 500; opacity: 0.8; }
+
+/* Sheets */
+.sheet-back { position: fixed; inset: 0; background: rgba(10, 12, 10, 0.4); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet {
+  background: var(--surface); width: 100%; max-width: 560px; max-height: 88%; overflow-y: auto; border-radius: 20px 20px 0 0;
+  padding-top: 16px; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+}
+.sheet h3 { margin: 0; font-family: var(--font-display); font-size: 20px; line-height: 1.2; overflow-wrap: anywhere; }
+.sheet .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sheet label { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: block; margin-bottom: 4px; }
+.sheet select, .sheet input[type="text"] { height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); padding: 0 10px; font-size: 15px; }
+.sheet a.open { color: var(--accent); font-weight: 600; overflow-wrap: anywhere; }
+.sheet .note { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.sheet .danger { color: var(--danger); }
+.sheet .confirm { color: var(--danger); font-size: 13.5px; }
+.share-img { width: 100%; max-width: 320px; align-self: center; border-radius: 12px; border: 1px solid var(--line); }
+.muted { color: var(--muted); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 12px); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 18px; font-size: 13.5px; z-index: 30; max-width: calc(100% - 32px); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top wrap">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" opacity=".55"><path d="M12 20V11M12 11 6 6M12 11l6-4M12 14l-5 1M12 14l6 2"/></g><g fill="currentColor"><circle cx="12" cy="20" r="2"/><circle cx="6" cy="6" r="2"/><circle cx="18" cy="7" r="2"/><circle cx="7" cy="15" r="1.6"/><circle cx="18" cy="16" r="1.6"/><circle cx="12" cy="11" r="1.6"/></g></svg>
+      <span>ai-tree</span>
+    </div>
+    <button class="icon-btn primary" id="shareBtn" type="button" aria-label="Make a TikTok image of your mind map">
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3 7.5 7.5l1.4 1.4L11 6.8V15h2V6.8l2.1 2.1 1.4-1.4zM5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6h-2v6H7v-6z"/></svg>
+      Post
+    </button>
+    <button class="icon-btn" id="menuBtn" type="button" aria-label="Settings and backup">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
+    </button>
+  </header>
+
+  <!-- Tab 1: Mind — type anything, see the map -->
+  <main class="panel wrap" id="tab-mind" role="tabpanel" aria-labelledby="tabbtn-mind">
+    <form class="capture" id="thoughtForm">
+      <textarea id="thoughtInput" rows="2" placeholder="What did you watch, read or think about? Just type it." aria-label="Log something"></textarea>
+      <div class="capture-row">
+        <span class="hint">No link needed. Add #topic to file it yourself.</span>
+        <button class="save" id="thoughtSave" type="submit" disabled>Save</button>
+      </div>
+    </form>
+
+    <h1 class="mind-title" id="mindTitle">What my mind looks like</h1>
+    <div class="graph-card">
+      <canvas id="graph" aria-label="Map of everything you saved, grouped by topic"></canvas>
+      <span class="example-tag" id="exampleTag" hidden>Example</span>
+      <div class="empty-graph" id="emptyGraph" hidden>
+        <p>Your map grows as you log things. Every dot is something you saved; lines join related ideas.</p>
+        <button class="icon-btn" id="loadExample" type="button">Show an example</button>
+      </div>
+      <div class="graph-foot"><span>Dots are things I saved. Lines are related ideas.</span><span id="graphCount"></span></div>
+    </div>
+
+    <div class="section-h"><h2>Insights</h2></div>
+    <div class="insights" id="insights"></div>
+
+    <div class="section-h"><h2>Recently logged</h2><small id="recentCount"></small></div>
+    <div class="list" id="recentList"></div>
+  </main>
+
+  <!-- Tab 2: Links — only pasted / shared links -->
+  <section class="panel wrap" id="tab-links" role="tabpanel" aria-labelledby="tabbtn-links" hidden>
+    <form class="capture" id="linkForm">
+      <input type="url" id="linkInput" inputmode="url" placeholder="Paste a link" aria-label="Paste a link" autocomplete="off">
+      <input type="text" id="linkNote" placeholder="Add a note (optional)" aria-label="Note for this link" autocomplete="off">
+      <div class="capture-row">
+        <span class="hint">Tip: install the app, then use Share → ai-tree from TikTok or YouTube.</span>
+        <button class="icon-btn" id="pasteBtn" type="button">Paste</button>
+        <button class="save" id="linkSave" type="submit" disabled>Save</button>
+      </div>
+    </form>
+    <input class="search" id="linkSearch" type="search" placeholder="Search links" aria-label="Search links">
+    <div class="section-h"><h2>Links</h2><small id="linkCount"></small></div>
+    <div class="list" id="linkList"></div>
+  </section>
+</div>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <div class="inner">
+    <button type="button" role="tab" id="tabbtn-mind" aria-controls="tab-mind" aria-selected="true" data-tab="mind">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 7l6 4 6-5M12 11l-5 7M12 11l6 6"/></g><g fill="currentColor"><circle cx="6" cy="7" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="12" cy="11" r="2.2"/><circle cx="7" cy="18" r="2.2"/><circle cx="18" cy="17" r="2.2"/></g></svg>
+      <span>Mind <span class="count" id="countMind"></span></span>
+    </button>
+    <button type="button" role="tab" id="tabbtn-links" aria-controls="tab-links" aria-selected="false" data-tab="links">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+      <span>Links <span class="count" id="countLinks"></span></span>
+    </button>
+  </div>
+</nav>
+
+<div class="sheet-back" id="sheetBack" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- storage ---------- */
+const KEY = "aitree.items.v1";
+const SETTINGS_KEY = "aitree.settings.v1";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+let items = store.get(KEY, []);
+let settings = store.get(SETTINGS_KEY, { handle: "" });
+let showingExample = false;
+const save = () => { if (!showingExample) store.set(KEY, items); };
+
+/* ---------- topics ---------- */
+const TOPICS = {
+  ai: "ai gpt chatgpt llm llms claude openai anthropic gemini neural agent agents prompt prompts robot robots automation ml",
+  philosophy: "philosophy philosopher stoic stoicism nietzsche kant ethics moral morality meaning existential plato socrates aristotle consciousness camus absurd metaphysics",
+  theology: "god faith bible church jesus christ theology prayer religion religious spiritual scripture gospel islam quran buddhism buddha sermon",
+  film: "film films movie movies cinema director scene trailer netflix actor actress oscar a24 letterboxd imdb screenplay anime",
+  writing: "writing write writer essay essays poem poetry novel story stories author draft journal journaling substack blog prose",
+  music: "music song songs album albums spotify artist lyrics beat beats guitar piano playlist rap jazz concert soundcloud",
+  tech: "code coding programming javascript python app apps software github developer dev api web ios android startup computer linux",
+  science: "science physics biology chemistry space nasa research study quantum evolution universe brain neuroscience math",
+  health: "health fitness workout gym sleep diet nutrition running meditation therapy anxiety habit habits",
+  books: "book books reading read chapter goodreads kindle library audiobook",
+  money: "money business invest investing finance market stocks crypto economy marketing sales career job",
+  art: "art design painting drawing illustration photography museum sculpture fashion architecture",
+  history: "history historical war empire ancient medieval century revolution"
+};
+const TOPIC_WORDS = {};
+for (const [t, words] of Object.entries(TOPICS)) for (const w of words.split(" ")) TOPIC_WORDS[w] = t;
+const DOMAIN_TOPICS = {
+  "github.com": "tech", "stackoverflow.com": "tech", "spotify.com": "music", "soundcloud.com": "music",
+  "letterboxd.com": "film", "imdb.com": "film", "goodreads.com": "books", "arxiv.org": "science",
+  "substack.com": "writing", "medium.com": "writing", "huggingface.co": "ai", "openai.com": "ai", "anthropic.com": "ai"
+};
+// Muted ink colors, close to pencil-and-paper notebooks.
+const PALETTE = ["#6f86a8", "#9a7f5c", "#b0565f", "#5f8f74", "#8a6fa3", "#b7864a", "#4f8a99", "#a0644a", "#7a8a52", "#9b6b86", "#5b6fa0", "#8c7a6a"];
+const FIXED = { philosophy: 0, theology: 1, writing: 2, health: 3, ai: 4, film: 5, tech: 6, music: 7, science: 8, art: 9, books: 10, money: 11, history: 7 };
+function topicColor(t) {
+  if (t in FIXED) return PALETTE[FIXED[t]];
+  let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+}
+
+const STOP = new Set("the a an and or but of to in on for with at by from is are was were be been it its this that these those i me my we our you your he she they them their his her not no so as if then than too very can will just about into over after before more most some any all what which who how why when where there here do does did have has had get got make made like www com http https html amp youtube tiktok video watch shorts reel status saved".split(" "));
+function tokens(s) {
+  return [...new Set((s || "").toLowerCase().replace(/https?:\/\/\S+/g, m => m.replace(/[\/.?=&_-]/g, " ")).split(/[^a-z0-9#]+/)
+    .map(w => w.replace(/^#/, "")).filter(w => w.length > 2 && !STOP.has(w) && !/^\d+$/.test(w))
+    .map(w => (w.length > 4 && w.endsWith("s") && !w.endsWith("ss")) ? w.slice(0, -1) : w))];
+}
+function classify(text, url) {
+  const tag = (text.match(/#([a-z][\w-]{1,24})/i) || [])[1];
+  if (tag) return tag.toLowerCase();
+  if (url) {
+    const host = hostOf(url);
+    for (const d in DOMAIN_TOPICS) if (host === d || host.endsWith("." + d)) return DOMAIN_TOPICS[d];
+  }
+  const counts = {};
+  for (const w of (text + " " + (url || "")).toLowerCase().split(/[^a-z0-9]+/)) {
+    const t = TOPIC_WORDS[w]; if (t) counts[t] = (counts[t] || 0) + 1;
+  }
+  const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return best ? best[0] : "misc";
+}
+
+/* ---------- links ---------- */
+const URL_RE = /(https?:\/\/[^\s<>"]+|www\.[^\s<>"]+\.[a-z]{2,}[^\s<>"]*)/i;
+function hostOf(u) { try { return new URL(u).hostname.replace(/^www\.|^m\.|^vm\./, ""); } catch { return ""; } }
+function normUrl(u) { u = u.replace(/[),.]+$/, ""); return /^https?:/i.test(u) ? u : "https://" + u; }
+function titleFromUrl(u) {
+  try {
+    const url = new URL(u);
+    const seg = url.pathname.split("/").filter(Boolean).pop() || "";
+    const clean = decodeURIComponent(seg).replace(/\.[a-z0-9]{2,5}$/i, "").replace(/[-_+]+/g, " ").trim();
+    const host = hostOf(u);
+    const generic = /^(watch|video|videos|status|reel|reels|shorts|p|post|posts|embed|index|share|v)$/i;
+    if (clean && !generic.test(clean) && /[a-z]{3,}/i.test(clean) && !/^[a-z0-9]{8,}$/i.test(clean)) return clean.charAt(0).toUpperCase() + clean.slice(1);
+    const at = url.pathname.match(/@[\w.]+/);
+    return at ? `${at[0]} on ${host}` : `Saved from ${host}`;
+  } catch { return u; }
+}
+async function enrich(item) {
+  // Best effort: oEmbed gives real titles for YouTube, TikTok, Vimeo and more.
+  try {
+    const r = await fetch("https://noembed.com/embed?url=" + encodeURIComponent(item.url));
+    const j = await r.json();
+    if (j && j.title) {
+      item.title = j.title.slice(0, 200); item.enriched = true;
+      if (j.author_name) item.author = j.author_name;
+      if (!item.topicLocked) item.topic = classify(`${item.note || ""} ${item.title}`, item.url);
+      save(); render();
+    }
+  } catch {}
+}
+
+/* ---------- adding ---------- */
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function addEntry(raw, source, extraNote) {
+  raw = (raw || "").trim();
+  if (!raw) return null;
+  if (showingExample) exitExample();
+  const m = raw.match(URL_RE);
+  let item;
+  if (m) {
+    const url = normUrl(m[0]);
+    const existing = items.find(i => i.url === url);
+    if (existing) { toast("Already saved"); return existing; }
+    const note = [raw.replace(m[0], "").trim(), (extraNote || "").trim()].filter(Boolean).join(" — ");
+    item = { id: uid(), kind: "link", url, note, title: titleFromUrl(url), source, createdAt: Date.now() };
+    item.topic = classify(`${note} ${item.title}`, url);
+    item.topicLocked = /#\w/.test(note);
+    items.unshift(item);
+    enrich(item);
+  } else {
+    item = { id: uid(), kind: "thought", note: raw, source, createdAt: Date.now() };
+    item.topic = classify(raw);
+    item.topicLocked = /#\w/.test(raw);
+    items.unshift(item);
+  }
+  save(); render();
+  toast(item.kind === "link" ? `Link saved to ${item.topic}` : `Saved to ${item.topic}`);
+  return item;
+}
+// A link shows its real title once known, else your note, else a title guessed from the URL.
+const label = i => i.kind === "link" ? ((i.enriched && i.title) || i.note || i.title || i.url) : i.note;
+
+/* ---------- relatedness ---------- */
+let graph = { nodes: [], edges: [], topics: [] };
+function buildGraph() {
+  const prev = new Map(graph.nodes.map(n => [n.id, n]));
+  const nodes = items.map(it => {
+    const p = prev.get(it.id);
+    return { id: it.id, item: it, topic: it.topic, tok: new Set(tokens(`${it.note || ""} ${it.title || ""} ${it.author || ""}`)),
+      x: p ? p.x : (Math.random() - 0.5) * 0.3, y: p ? p.y : (Math.random() - 0.5) * 0.3, vx: 0, vy: 0, deg: 0 };
+  });
+  const cand = nodes.map(() => []);
+  for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+    const a = nodes[i], b = nodes[j];
+    let shared = 0; for (const t of a.tok) if (b.tok.has(t)) shared++;
+    let s = shared / Math.sqrt(Math.max(1, a.tok.size) * Math.max(1, b.tok.size));
+    if (a.topic === b.topic) s += 0.22;
+    if (s >= 0.2) { cand[i].push([j, s]); cand[j].push([i, s]); }
+  }
+  const seen = new Set(), edges = [];
+  cand.forEach((list, i) => {
+    list.sort((x, y) => y[1] - x[1]).slice(0, 4).forEach(([j, s]) => {
+      const k = i < j ? i + "-" + j : j + "-" + i;
+      if (!seen.has(k)) { seen.add(k); edges.push({ a: nodes[i], b: nodes[j], s }); nodes[i].deg++; nodes[j].deg++; }
+    });
+  });
+  const counts = {};
+  nodes.forEach(n => counts[n.topic] = (counts[n.topic] || 0) + 1);
+  const topics = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  const centers = {};
+  topics.forEach((t, i) => {
+    const ang = -Math.PI / 2 + (i / topics.length) * Math.PI * 2 + 0.35;
+    const r = topics.length === 1 ? 0 : 0.62;
+    centers[t] = { x: Math.cos(ang) * r, y: Math.sin(ang) * r, n: counts[t] };
+  });
+  graph = { nodes, edges, topics, centers, counts };
+  simulate(240);
+}
+function simulate(steps) {
+  const { nodes, edges, centers } = graph;
+  const n = nodes.length; if (!n) return;
+  const rep = 0.0016 * Math.min(1, 30 / n + 0.3);
+  for (let s = 0; s < steps; s++) {
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const a = nodes[i], b = nodes[j];
+      let dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy + 1e-4;
+      const f = rep / d2;
+      a.vx += dx * f; a.vy += dy * f; b.vx -= dx * f; b.vy -= dy * f;
+    }
+    for (const e of edges) {
+      const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y, d = Math.sqrt(dx * dx + dy * dy) + 1e-6;
+      const same = e.a.topic === e.b.topic;
+      const f = (d - (same ? 0.14 : 0.5)) * (same ? 0.03 : 0.004);
+      e.a.vx += dx / d * f; e.a.vy += dy / d * f; e.b.vx -= dx / d * f; e.b.vy -= dy / d * f;
+    }
+    for (const nd of nodes) {
+      const c = centers[nd.topic];
+      nd.vx += (c.x - nd.x) * 0.02; nd.vy += (c.y - nd.y) * 0.02;
+      nd.vx *= 0.82; nd.vy *= 0.82; nd.x += nd.vx; nd.y += nd.vy;
+    }
+  }
+}
+
+/* ---------- drawing ---------- */
+const canvas = document.getElementById("graph");
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let view = null; // last transform, for tap hit-testing
+
+function drawGraph(ctx, X, Y, W, H, k, colors) {
+  const { nodes, edges, topics, counts } = graph;
+  ctx.save();
+  ctx.fillStyle = colors.paper; ctx.fillRect(X, Y, W, H);
+  if (!nodes.length) { ctx.restore(); return null; }
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const nd of nodes) { minX = Math.min(minX, nd.x); maxX = Math.max(maxX, nd.x); minY = Math.min(minY, nd.y); maxY = Math.max(maxY, nd.y); }
+  const pad = 46 * k, spanX = Math.max(maxX - minX, 0.3), spanY = Math.max(maxY - minY, 0.3);
+  const sc = Math.min((W - pad * 2) / spanX, (H - pad * 2 - 14 * k) / spanY);
+  const ox = X + W / 2 - ((minX + maxX) / 2) * sc, oy = Y + H / 2 + 8 * k - ((minY + maxY) / 2) * sc;
+  const P = nd => [ox + nd.x * sc, oy + nd.y * sc];
+
+  // topic centroids
+  const cen = {};
+  for (const t of topics) cen[t] = { x: 0, y: 0, n: 0, top: Infinity };
+  for (const nd of nodes) { const [px, py] = P(nd); const c = cen[nd.topic]; c.x += px; c.y += py; c.n++; c.top = Math.min(c.top, py); }
+  // soft glow per cluster
+  for (const t of topics) {
+    const c = cen[t]; c.x /= c.n; c.y /= c.n;
+    const r = (40 + Math.sqrt(c.n) * 22) * k;
+    const g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, r);
+    g.addColorStop(0, hexA(topicColor(t), colors.dark ? 0.18 : 0.12)); g.addColorStop(1, hexA(topicColor(t), 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.strokeStyle = colors.edge; ctx.lineWidth = 0.8 * k;
+  ctx.beginPath();
+  for (const e of edges) { const [ax, ay] = P(e.a), [bx, by] = P(e.b); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); }
+  ctx.stroke();
+  ctx.fillStyle = colors.dot;
+  for (const nd of nodes) {
+    const [px, py] = P(nd);
+    ctx.beginPath(); ctx.arc(px, py, (3.2 + Math.min(nd.deg, 6) * 0.25) * k, 0, Math.PI * 2); ctx.fill();
+  }
+  // labels
+  ctx.font = `500 ${12.5 * k}px "DM Mono", ui-monospace, monospace`;
+  ctx.textBaseline = "middle";
+  const placed = [];
+  for (const t of topics) {
+    if (!counts[t]) continue;
+    const c = cen[t], text = t;
+    const tw = ctx.measureText(text).width + 14 * k;
+    let lx = Math.min(Math.max(c.x - tw / 2, X + 8 * k), X + W - tw - 8 * k);
+    let ly = Math.max(c.top - 16 * k, Y + 14 * k);
+    for (const p of placed) if (Math.abs(p.y - ly) < 16 * k && lx < p.x + p.w && lx + tw > p.x) ly = p.y + 18 * k;
+    placed.push({ x: lx, y: ly, w: tw });
+    ctx.fillStyle = topicColor(t);
+    ctx.beginPath(); ctx.arc(lx + 3.5 * k, ly, 3.2 * k, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = colors.label; ctx.fillText(text, lx + 12 * k, ly + 0.5 * k);
+  }
+  ctx.restore();
+  return { ox, oy, sc };
+}
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+function themeColors() {
+  return { paper: css("--paper"), edge: css("--edge"), dot: css("--dot"), label: css("--muted"),
+    dark: getComputedStyle(document.documentElement).colorScheme === "dark" };
+}
+function paint() {
+  const w = canvas.clientWidth; if (!w) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(w * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  view = drawGraph(ctx, 0, 0, w, w, 1, themeColors());
+}
+
+canvas.addEventListener("pointerup", ev => {
+  if (!view) return;
+  const r = canvas.getBoundingClientRect();
+  const x = ev.clientX - r.left, y = ev.clientY - r.top;
+  let best = null, bd = 22 * 22;
+  for (const nd of graph.nodes) {
+    const dx = view.ox + nd.x * view.sc - x, dy = view.oy + nd.y * view.sc - y, d = dx * dx + dy * dy;
+    if (d < bd) { bd = d; best = nd; }
+  }
+  if (best) openItem(best.item.id);
+});
+
+/* ---------- views ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function ago(t) {
+  const s = (Date.now() - t) / 1000;
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  if (s < 86400 * 7) return Math.floor(s / 86400) + "d ago";
+  return new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function span() {
+  if (!items.length) return "";
+  const first = Math.min(...items.map(i => i.createdAt));
+  const d = Math.floor((Date.now() - first) / 86400000);
+  if (d < 1) return "after day one";
+  if (d < 7) return `after ${d + 1} days`;
+  if (d < 14) return "after one week";
+  if (d < 28) return `after ${Math.round(d / 7)} weeks`;
+  if (d < 45) return "after one month";
+  if (d < 365) return `after ${Math.round(d / 30)} months`;
+  return "after one year";
+}
+function rowHTML(i) {
+  const c = topicColor(i.topic);
+  const host = i.kind === "link" ? hostOf(i.url) : "";
+  const badge = i.kind === "link" ? esc((host[0] || "?").toUpperCase()) : "✎";
+  return `<button class="item" type="button" data-id="${esc(i.id)}">
+    <span class="badge" style="background:${c}">${badge}</span>
+    <span class="body"><span class="t">${esc(label(i))}</span>
+    <span class="meta"><span class="chip"><i style="background:${c}"></i>${esc(i.topic)}</span>${host ? `<span>${esc(host)}</span>` : ""}<span>${ago(i.createdAt)}</span></span></span>
+  </button>`;
+}
+
+function render() {
+  buildGraph();
+  const links = items.filter(i => i.kind === "link");
+  $("countMind").textContent = items.length || "";
+  $("countLinks").textContent = links.length || "";
+  $("mindTitle").textContent = items.length ? `What my mind looks like ${span()}` : "What my mind looks like";
+  $("graphCount").textContent = items.length ? `${items.length} saved` : "";
+  $("emptyGraph").hidden = items.length > 0;
+  $("exampleTag").hidden = !showingExample;
+  paint();
+
+  // insights
+  const ins = [];
+  if (items.length) {
+    const top = graph.topics[0];
+    ins.push(["Most on your mind", `${top} · ${graph.counts[top]}`]);
+    const week = items.filter(i => Date.now() - i.createdAt < 7 * 86400000).length;
+    ins.push(["Logged this week", `${week} item${week === 1 ? "" : "s"}`]);
+    ins.push(["Topics", `${graph.topics.length}`]);
+    ins.push(["Thoughts · links", `${items.length - links.length} · ${links.length}`]);
+    // pair of big topics with the fewest connections between them
+    const big = graph.topics.filter(t => graph.counts[t] >= 2).slice(0, 6);
+    let pair = null, low = Infinity;
+    for (let a = 0; a < big.length; a++) for (let b = a + 1; b < big.length; b++) {
+      const n = graph.edges.filter(e => (e.a.topic === big[a] && e.b.topic === big[b]) || (e.a.topic === big[b] && e.b.topic === big[a])).length;
+      if (n < low) { low = n; pair = [big[a], big[b]]; }
+    }
+    if (pair) ins.push(["Explore next", `You save a lot about ${pair[0]} and ${pair[1]}, but they barely touch. Look for something that connects them.`, true]);
+  }
+  $("insights").innerHTML = ins.length ? ins.map(([k, v, wide]) => `<div class="insight${wide ? " wide" : ""}"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")
+    : `<div class="insight wide"><div class="k">Nothing yet</div><div class="v">Log a few things and you'll see your top topics and what to explore next.</div></div>`;
+
+  const recent = items.slice(0, 15);
+  $("recentCount").textContent = items.length > 15 ? `latest 15 of ${items.length}` : "";
+  $("recentList").innerHTML = recent.length ? recent.map(rowHTML).join("") : `<div class="empty-list">Type something above, like "Watched a video on stoicism and anxiety".</div>`;
+
+  renderLinks();
+}
+function renderLinks() {
+  const q = $("linkSearch").value.trim().toLowerCase();
+  const links = items.filter(i => i.kind === "link" && (!q || `${i.title} ${i.url} ${i.note} ${i.topic}`.toLowerCase().includes(q)));
+  $("linkCount").textContent = links.length ? `${links.length}` : "";
+  $("linkList").innerHTML = links.length ? links.map(rowHTML).join("")
+    : `<div class="empty-list">${q ? "No links match that search." : "Links you paste or share to ai-tree show up here, and only here."}</div>`;
+}
+
+/* ---------- sheet ---------- */
+const back = $("sheetBack"), sheet = $("sheet");
+function openSheet(html) { sheet.innerHTML = html; back.hidden = false; }
+function closeSheet() { back.hidden = true; sheet.innerHTML = ""; }
+back.addEventListener("click", e => { if (e.target === back) closeSheet(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !back.hidden) closeSheet(); });
+
+function openItem(id) {
+  const it = items.find(i => i.id === id); if (!it) return;
+  const nd = graph.nodes.find(n => n.id === id);
+  const related = graph.edges.filter(e => e.a === nd || e.b === nd).sort((a, b) => b.s - a.s).map(e => (e.a === nd ? e.b : e.a).item).slice(0, 5);
+  const opts = [...new Set([...graph.topics, ...Object.keys(TOPICS), it.topic])].sort();
+  openSheet(`
+    <h3 id="sheetTitle">${esc(label(it))}</h3>
+    ${it.kind === "link" ? `<a class="open" href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.url)}</a>` : ""}
+    ${it.kind === "link" && it.note ? `<p class="note">${esc(it.note)}</p>` : ""}
+    <p class="muted" style="margin:0">${it.kind === "link" ? "Link" : "Thought"} · ${it.source === "shared" ? "shared from another app · " : ""}${new Date(it.createdAt).toLocaleString()}</p>
+    <div>
+      <label for="topicSel">Topic</label>
+      <div class="row">
+        <select id="topicSel">${opts.map(t => `<option${t === it.topic ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
+        <input type="text" id="topicNew" placeholder="or new topic" maxlength="24">
+      </div>
+    </div>
+    ${related.length ? `<div><label>Related</label><div class="list">${related.map(rowHTML).join("")}</div></div>` : ""}
+    <div class="row">
+      <button class="icon-btn" type="button" id="sheetDone">Done</button>
+      <button class="icon-btn danger" type="button" id="sheetDel">Delete</button>
+      <span class="confirm" id="delConfirm" hidden>Tap Delete again to remove it.</span>
+    </div>`);
+  const setTopic = t => { t = t.trim().toLowerCase().replace(/^#/, ""); if (!t) return; it.topic = t; it.topicLocked = true; save(); render(); };
+  $("topicSel").addEventListener("change", e => setTopic(e.target.value));
+  $("topicNew").addEventListener("change", e => setTopic(e.target.value));
+  $("sheetDone").addEventListener("click", closeSheet);
+  let armed = false;
+  $("sheetDel").addEventListener("click", () => {
+    if (!armed) { armed = true; $("delConfirm").hidden = false; return; }
+    items = items.filter(i => i.id !== id); save(); closeSheet(); render(); toast("Deleted");
+  });
+  sheet.querySelectorAll(".item").forEach(b => b.addEventListener("click", () => openItem(b.dataset.id)));
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest(".app .item"); if (b) openItem(b.dataset.id);
+});
+
+/* ---------- TikTok image ---------- */
+function makePostImage() {
+  const W = 1080, H = 1920, c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+  const colors = { paper: "#fdfaf4", edge: "rgba(52,46,38,0.14)", dot: "#26231f", label: "#5d625c", dark: false };
+  // title
+  ctx.fillStyle = "#1f2420"; ctx.textBaseline = "alphabetic";
+  ctx.font = `700 84px "Bricolage Grotesque", "Figtree", system-ui, sans-serif`;
+  const title = `What my mind looks like ${span() || "today"}`;
+  const lines = wrap(ctx, title, W - 120);
+  let y = 380;
+  lines.forEach(l => { ctx.fillText(l, 60, y); y += 96; });
+  // card
+  const cx = 60, cy = y + 30, cw = W - 120, ch = cw;
+  roundRect(ctx, cx, cy, cw, ch + 110, 36); ctx.fillStyle = "#fdfaf4"; ctx.fill();
+  ctx.strokeStyle = "#e2e0d8"; ctx.lineWidth = 3; ctx.stroke();
+  ctx.save(); roundRect(ctx, cx, cy, cw, ch, 36); ctx.clip();
+  drawGraph(ctx, cx, cy, cw, ch, 2.4, colors);
+  ctx.restore();
+  ctx.fillStyle = "#8a8f88"; ctx.font = `400 30px "DM Mono", ui-monospace, monospace`;
+  ctx.textAlign = "center"; ctx.fillText("Dots are things I saved. Lines are related ideas.", W / 2, cy + ch + 68);
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#1f2420"; ctx.font = `500 38px "Figtree", system-ui, sans-serif`;
+  ctx.fillText("ai-tree: my second brain", 60, cy + ch + 200);
+  if (settings.handle) {
+    ctx.fillStyle = "#8a8f88"; ctx.textAlign = "right";
+    ctx.fillText("@" + settings.handle.replace(/^@/, ""), W - 60, cy + ch + 200); ctx.textAlign = "left";
+  }
+  return c;
+}
+function wrap(ctx, text, max) {
+  const out = []; let line = "";
+  for (const w of text.split(" ")) {
+    const t = line ? line + " " + w : w;
+    if (ctx.measureText(t).width > max && line) { out.push(line); line = w; } else line = t;
+  }
+  if (line) out.push(line);
+  return out;
+}
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+$("shareBtn").addEventListener("click", () => {
+  if (!items.length) { toast("Log a few things first, or tap Show an example"); return; }
+  const c = makePostImage();
+  const dataUrl = c.toDataURL("image/png");
+  const caption = `Building my second brain by logging what I engage with. ${graph.topics.slice(0, 5).map(t => "#" + t.replace(/\W/g, "")).join(" ")} #secondbrain`;
+  openSheet(`
+    <h3>Your TikTok image</h3>
+    <img class="share-img" src="${dataUrl}" alt="Your mind map as a 9:16 image">
+    <p class="muted" style="margin:0">Tap Share to send it to TikTok. If sharing isn't available, press and hold the image to save it to your photos.</p>
+    <div><label for="capText">Caption</label><textarea id="capText" rows="3" style="width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px">${esc(caption)}</textarea></div>
+    <div class="row">
+      <button class="icon-btn primary" type="button" id="doShare">Share</button>
+      <button class="icon-btn" type="button" id="copyCap">Copy caption</button>
+      <button class="icon-btn" type="button" id="closeShare">Close</button>
+    </div>`);
+  $("closeShare").addEventListener("click", closeSheet);
+  $("copyCap").addEventListener("click", () => {
+    const ta = $("capText");
+    navigator.clipboard?.writeText(ta.value).then(() => toast("Caption copied"), () => { ta.select(); toast("Press and hold to copy"); })
+      ?? (ta.select(), toast("Press and hold to copy"));
+  });
+  $("doShare").addEventListener("click", () => {
+    c.toBlob(async blob => {
+      try {
+        const file = new File([blob], "my-mind-ai-tree.png", { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], text: $("capText").value });
+          return;
+        }
+      } catch (e) { if (e && e.name === "AbortError") return; }
+      toast("Press and hold the image to save it");
+    }, "image/png");
+  });
+});
+
+/* ---------- menu ---------- */
+$("menuBtn").addEventListener("click", () => {
+  openSheet(`
+    <h3>Settings</h3>
+    <div><label for="handleIn">Your TikTok handle (shown on the image)</label>
+      <input type="text" id="handleIn" placeholder="@yourname" value="${esc(settings.handle)}" style="width:100%"></div>
+    <div><label>Backup</label>
+      <div class="row">
+        <button class="icon-btn" type="button" id="exportBtn">Copy backup</button>
+        <label class="icon-btn" for="importFile" style="margin:0;font:600 14px var(--font-body);text-transform:none;letter-spacing:0;color:var(--ink)">Restore from file</label>
+        <input type="file" id="importFile" accept="application/json,.json,.txt" hidden>
+      </div>
+      <textarea id="backupText" rows="3" readonly hidden style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px;font:12px var(--font-mono)"></textarea>
+    </div>
+    <p class="muted" style="margin:0">Everything stays on this device. Nothing is uploaded.</p>
+    <div class="row">
+      <button class="icon-btn" type="button" id="menuDone">Done</button>
+      <button class="icon-btn danger" type="button" id="wipeBtn">Erase everything</button>
+      <span class="confirm" id="wipeConfirm" hidden>Tap again to erase all ${items.length} items.</span>
+    </div>`);
+  $("handleIn").addEventListener("input", e => { settings.handle = e.target.value.trim(); store.set(SETTINGS_KEY, settings); });
+  $("menuDone").addEventListener("click", closeSheet);
+  $("exportBtn").addEventListener("click", () => {
+    const ta = $("backupText"); ta.hidden = false; ta.value = JSON.stringify(showingExample ? [] : items);
+    navigator.clipboard?.writeText(ta.value).then(() => toast("Backup copied. Paste it into a note to keep it."), () => { ta.select(); toast("Select all and copy"); });
+  });
+  $("importFile").addEventListener("change", async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!Array.isArray(data)) throw 0;
+      const have = new Set(items.map(i => i.id));
+      if (showingExample) exitExample();
+      items = [...data.filter(i => i && i.id && !have.has(i.id)), ...items].sort((a, b) => b.createdAt - a.createdAt);
+      save(); render(); closeSheet(); toast(`Restored ${data.length} items`);
+    } catch { toast("That file isn't an ai-tree backup"); }
+  });
+  let armed = false;
+  $("wipeBtn").addEventListener("click", () => {
+    if (!armed) { armed = true; $("wipeConfirm").hidden = false; return; }
+    items = []; showingExample = false; save(); closeSheet(); render(); toast("Erased");
+  });
+});
+
+/* ---------- example ---------- */
+const EXAMPLE = [
+  ["Watched a lecture on Nietzsche and the meaning of suffering", "philosophy"], ["Stoicism: control what you can, accept the rest", "philosophy"],
+  ["Camus and the absurd: why keep pushing the boulder", "philosophy"], ["Is consciousness just information? Podcast notes", "philosophy"],
+  ["Free will debate clip, Sapolsky vs Dennett", "philosophy"], ["Augustine's Confessions, book 8", "theology"],
+  ["Sermon on faith and doubt", "theology"], ["What C.S. Lewis meant by joy", "theology"],
+  ["Rewatched Past Lives, the way it frames time", "film"], ["Tarkovsky's Stalker, the long takes", "film"], ["A24 trailer breakdown", "film"],
+  ["How LLM agents plan tasks", "ai"], ["Claude vs ChatGPT for writing essays", "ai"], ["Can AI be conscious? Video essay", "ai"],
+  ["Prompting tips for research", "ai"], ["Neural networks explained visually", "ai"], ["Using AI to journal and reflect", "ai"],
+  ["AI art and what makes something creative", "ai"], ["Essay draft: why I journal every night", "writing"],
+  ["Substack post on writing with clarity", "writing"], ["Poetry by Mary Oliver, 'Wild Geese'", "writing"],
+  ["Short story idea about memory and time", "writing"], ["Morning run, felt clear-headed after", "health"], ["Sleep and memory research", "health"]
+];
+function loadExample() {
+  showingExample = true;
+  const now = Date.now();
+  items = EXAMPLE.map(([note, topic], i) => ({ id: "ex" + i, kind: "thought", note, topic, topicLocked: true, source: "typed", createdAt: now - (EXAMPLE.length - i) * 86400000 * 1.3 }));
+  items.reverse();
+  render();
+}
+function exitExample() { showingExample = false; items = store.get(KEY, []); }
+$("loadExample").addEventListener("click", loadExample);
+
+/* ---------- inputs ---------- */
+const ti = $("thoughtInput");
+ti.addEventListener("input", () => { $("thoughtSave").disabled = !ti.value.trim(); ti.style.height = "auto"; ti.style.height = ti.scrollHeight + "px"; });
+$("thoughtForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const it = addEntry(ti.value, URL_RE.test(ti.value) ? "pasted" : "typed");
+  if (it) { ti.value = ""; ti.style.height = ""; $("thoughtSave").disabled = true; }
+});
+ti.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("thoughtForm").requestSubmit(); } });
+
+const li = $("linkInput");
+const syncLink = () => { $("linkSave").disabled = !URL_RE.test(li.value); };
+li.addEventListener("input", syncLink);
+$("linkForm").addEventListener("submit", e => {
+  e.preventDefault();
+  if (!URL_RE.test(li.value)) { toast("That doesn't look like a link"); return; }
+  if (addEntry(li.value, "pasted", $("linkNote").value)) { li.value = ""; $("linkNote").value = ""; syncLink(); }
+});
+$("pasteBtn").addEventListener("click", async () => {
+  try {
+    const t = await navigator.clipboard.readText();
+    if (t && URL_RE.test(t)) { li.value = t.match(URL_RE)[0]; syncLink(); $("linkNote").focus(); return; }
+    toast("No link on your clipboard");
+  } catch { li.focus(); toast("Press and hold the box, then tap Paste"); }
+});
+$("linkSearch").addEventListener("input", renderLinks);
+
+/* ---------- tabs ---------- */
+function setTab(name) {
+  document.querySelectorAll("nav.tabs [role=tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+  $("tab-mind").hidden = name !== "mind"; $("tab-links").hidden = name !== "links";
+  if (name === "mind") paint();
+  window.scrollTo(0, 0);
+  store.set("aitree.tab", name);
+}
+document.querySelectorAll("nav.tabs [role=tab]").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
+
+/* ---------- misc ---------- */
+let toastT;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200); }
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(paint, 100); });
+window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", paint);
+document.fonts?.ready.then(paint);
+
+// Links shared from TikTok, YouTube etc. arrive here via the installed app's share sheet.
+const qs = new URLSearchParams(location.search);
+const shared = [qs.get("title"), qs.get("text"), qs.get("url")].filter(Boolean).join(" ");
+if (!items.length) loadExample();
+if (shared) {
+  const it = addEntry(shared, "shared");
+  try { history.replaceState(null, "", location.pathname); } catch {}
+  setTab(it && it.kind === "link" ? "links" : "mind");
+} else {
+  render();
+  setTab(store.get("aitree.tab", "mind") === "links" ? "links" : "mind");
+}
+
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+})();
+</script>
+</body>
+</html>
